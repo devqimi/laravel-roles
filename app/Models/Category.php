@@ -9,7 +9,8 @@ class Category extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $table = 'categories'; // Confirm table name
+    protected $fillable = ['cname'];
 
     public function requestForms()
     {

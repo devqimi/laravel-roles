@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Models\Department;
+use Spatie\Permission\Models\Role;
 
 class RegisteredUserController extends Controller
 {
@@ -20,7 +22,10 @@ class RegisteredUserController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('auth/register');
+        return Inertia::render('auth/register' , [
+            'departments' => Department::select('id', 'dname')->get(),
+            'roles' => Role::select('id', 'name')->get(),
+        ]);
     }
 
     /**
@@ -30,17 +35,26 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'nric' => 'required|string|max:20|unique:users,nric',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'department_id' => 'required|exists:departments,id',
+            'role' => 'required|exists:roles,name',
+            'phone' => 'nullable|string|max:20', // ✅ new line
         ]);
 
         $user = User::create([
             'name' => $request->name,
+            'nric' => $validated['nric'],
             'email' => $request->email,
+            'department_id' => $validated['department_id'],
+            'phone' => $validated['phone'], // ✅ add this
             'password' => Hash::make($request->password),
         ]);
+
+        $user->assignRole($validated['role']);
 
         event(new Registered($user));
 

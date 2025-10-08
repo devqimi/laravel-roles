@@ -8,11 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Foundation\Auth\Access\Authorizable; // ✅ Add this
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, Authorizable;
 
     /**
      * The attributes that are mass assignable.
@@ -21,8 +22,11 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'nric',
         'email',
+        'phone',
         'password',
+        'department_id',
     ];
 
     /**
@@ -46,5 +50,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+    public function crfs()
+    {
+        return $this->hasMany(Crf::class);
     }
 }

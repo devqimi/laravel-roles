@@ -1,19 +1,49 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Models\Crf;
 use Inertia\Inertia;
-use App\Http\Controllers\PermissionController;
+use App\Models\Category;
+use App\Models\Department;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\CrfController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PermissionController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
+Route::get('/api/departments', function () {
+    return response()->json(Department::all());
+});
+
+Route::get('/api/categories', function () {
+    return response()->json(Category::all());
+});
+
+Route::get('/api/crforms', function () {
+    return response()->json(Crf::all());
+});
+
+Route::middleware(['auth:sanctum'])->get('/api/user', function (Request $request) {
+    $user = $request->user()->load('department'); // if user has relation
+    return response()->json([
+        'id' => $user->id,
+        'name' => $user->name,
+        'nric' => $user->nric,
+        'department_id' => $user->department_id,
+        'department_name' => $user->department?->dname,
+        'email' => $user->email,
+    ]);
+});
+
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+
+    //dashboard routes
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     //permissions routes
     Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index')->can('view any permissions');
@@ -36,7 +66,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit')->can('update users');
     Route::put('users/{user}', [UserController::class, 'update'])->name('users.update')->can('update users');
     Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy')->can('delete user');
+
+    //crf routes
+    Route::get('crfs', [CrfController::class, 'index'])->name('crfs.index')->middleware('can:View Personal CRF');
+    Route::post('crfs', [CrfController::class, 'store'])->name('crfs.store')->can('Create CRF');
+    Route::get('crfs/create', [CrfController::class, 'create'])->name('crfs.create')->can('Create CRF');
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

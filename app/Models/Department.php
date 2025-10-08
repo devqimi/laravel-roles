@@ -9,10 +9,15 @@ class Department extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $table = 'departments'; // Confirm table name
+    protected $fillable = ['dname'];
 
     public function requestForms()
     {
         return $this->hasMany(RequestForm::class);
+    }
+    public function users()
+    {
+        return $this->hasMany(User::class);
     }
 }

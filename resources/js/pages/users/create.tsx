@@ -1,23 +1,12 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlaceholderPattern } from '@/components/ui/placeholder-pattern';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
-import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import React, { useEffect, useState } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import React from 'react';
 import InputError from '@/components/input-error';
-import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
-import { Permission, Role, SinglePermission } from '@/types/role_permission';
-import { permission } from 'node:process';
-import { edit } from '@/routes/appearance';
-import TablePagination from '@/components/table-pagination';
-import { router } from '@inertiajs/core';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const breadcrumbs: BreadcrumbItem[] = [
