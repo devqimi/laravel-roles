@@ -27,22 +27,38 @@ class Crf extends Model
         'issue',
         'reason',
         'supporting_file',
-        'user_id', // ✅ Make sure this is here!
+        'user_id',
+        'application_status_id',
+        'approved_by',
+        'assigned_to',
+        'it_remark',
     ];
 
-    public function department()
-    {
-        return $this->belongsTo(Department::class, 'department_id');
-    }
     public function user(){
         return $this->belongsTo(User::class, 'user_id');
     }
+    
+    public function approver(){
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function department(){
+        return $this->belongsTo(Department::class, 'department_id');
+    }
+
     public function category(){
         return $this->belongsTo(Category::class, 'category_id');
     }
-    public function role()
-    {
+
+    public function application_status(){
+        return $this->belongsTo(ApplicationStatus::class, 'application_status_id');
+    }
+
+    public function role(){
         return $this->belongsTo(Role::class);
     }
 
+    public function assigned_user(){
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
 }

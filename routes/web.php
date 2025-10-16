@@ -40,6 +40,8 @@ Route::middleware(['auth:sanctum'])->get('/api/user', function (Request $request
     ]);
 });
 
+Route::get('crfs/check-status', [CrfController::class, 'checkStatus'])->name('crfs.checkStatus');
+
 Route::middleware(['auth', 'verified'])->group(function () {
 
     //dashboard routes
@@ -71,6 +73,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('crfs', [CrfController::class, 'index'])->name('crfs.index')->middleware('can:View Personal CRF');
     Route::post('crfs', [CrfController::class, 'store'])->name('crfs.store')->can('Create CRF');
     Route::get('crfs/create', [CrfController::class, 'create'])->name('crfs.create')->can('Create CRF');
+    Route::delete('crfs/{crf}', [CrfController::class, 'destroy'])->name('crfs.destroy')->can('Close Assigned CRF');
+    Route::post('crfs/{crf}/approve', [CrfController::class, 'approve'])->name('crfs.approve')->can('verified CRF');
+    Route::post('crfs/{crf}/acknowledge', [CrfController::class, 'acknowledge'])->name('crfs.acknowledge')->can('Acknowledge CRF by ITD');
+    Route::post('crfs/{crf}/assign-to-itd', [CrfController::class, 'assignToItd'])->name('crfs.assignToItd')->can('Assign CRF To ITD');
+    Route::post('crfs/{crf}/assign-to-vendor', [CrfController::class, 'assignToVendor'])->name('crfs.assignToVendor')->can('Assign CRF to Vendor');
+    Route::get('crfs/{crf}', [CrfController::class, 'show'])->name('crfs.show');
+    Route::put('crfs/{crf}', [CrfController::class, 'update'])->name('crfs.update')->can('Update CRF (own CRF)');
+    Route::put('crfs/{crf}/mark-in-progress', [CrfController::class, 'markInProgress'])->name('crfs.markInProgress')->can('Update CRF (own CRF)');
+    Route::put('crfs/{crf}/mark-completed', [CrfController::class, 'markCompleted'])->name('crfs.markCompleted')->can('Update CRF (own CRF)');
+    Route::post('crfs/{crf}/reassign-to-itd', [CrfController::class, 'reassignToItd'])->name('crfs.reassignToItd')->can('Re Assign PIC ITD');
+    Route::post('crfs/{crf}/reassign-to-vendor', [CrfController::class, 'reassignToVendor'])->name('crfs.reassignToVendor')->can('Re Assign PIC Vendor');
+
 });
 
 require __DIR__ . '/settings.php';

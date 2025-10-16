@@ -16,7 +16,7 @@ class UserController extends Controller
     {
         $users = User::query()
         ->latest()
-        ->paginate(5)
+        ->paginate(10)
         ->withQueryString()
         ->through(fn($user) => [
             'id' => $user->id,

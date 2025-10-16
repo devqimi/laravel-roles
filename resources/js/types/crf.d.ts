@@ -1,6 +1,11 @@
 import { Pagination } from './pagination';
 import { SingleRole } from './roles';
 
+type ApplicationStatus = {
+    id: number;
+    status: string;
+};
+
 // ✅ Define Department and Category types
 type Department = {
     id: number;
@@ -30,9 +35,15 @@ export interface SingleCrf {
     department_id: number;
     category_id: number;
     user_id: number;
-    department?: Department; // ✅ Add this
-    category?: Category; // ✅ Add this
-    user?: User; // ✅ Add this for the user relationship
+    department?: Department;
+    category?: Category;
+    user?: User;
+    application_status_id: number;
+    application_status?: ApplicationStatus;
+    approved_by: number | null;
+    approver?: User;
+    assigned_to: number | null;
+    it_remark?: string | null;
     created_at: string;
     updated_at: string;
 }

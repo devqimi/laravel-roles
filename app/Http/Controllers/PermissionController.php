@@ -11,7 +11,7 @@ class PermissionController extends Controller
     // index method
     public function index()
     {
-        $permissions = Permission::latest()->paginate(5);
+        $permissions = Permission::latest()->paginate(10);
         $permissions->getcollection()->transform(function($permission){
             return [
                 'id' => $permission->id,

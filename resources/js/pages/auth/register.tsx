@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import AuthLayout from '@/layouts/auth-layout';
 import { Head, useForm } from '@inertiajs/react';
 import { LoaderCircle } from 'lucide-react';
+import { useMemo } from 'react';
 
 type Department = {
     id: number;
@@ -31,8 +32,43 @@ export default function Register({ departments, roles }: RegisterProps) {
         password_confirmation: '',
         department_id: '',
         role: '',
-        phone: '', // ✅ add this
+        phone: '',
     });
+
+    // Check if selected department is "Unit Teknologi Maklumat"
+    const selectedDepartment = useMemo(() => {
+        return departments.find(
+            (d) => d.id === parseInt(data.department_id)
+        );
+    }, [data.department_id, departments]);
+
+    const isITDepartment = selectedDepartment?.dname === 'Unit Teknologi Maklumat';
+
+    // Filter roles based on department
+    const availableRoles = useMemo(() => {
+        if (isITDepartment) {
+            // IT Department can select any role
+            return roles;
+        } else {
+            // Other departments can only be USER or HOU
+            return roles.filter((r) => r.name === 'USER' || r.name === 'HOU');
+        }
+    }, [isITDepartment, roles]);
+
+    // Auto-set role to USER when non-IT department is selected
+    const handleDepartmentChange = (departmentId: string) => {
+        setData('department_id', departmentId);
+        
+        const dept = departments.find((d) => d.id === parseInt(departmentId));
+        
+        // If not IT department, automatically set role to USER
+        if (dept && dept.dname !== 'Unit Teknologi Maklumat') {
+            setData('role', 'USER');
+        } else {
+            // Clear role selection when switching to IT department
+            setData('role', '');
+        }
+    };
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -40,6 +76,7 @@ export default function Register({ departments, roles }: RegisterProps) {
             onSuccess: () => reset('password', 'password_confirmation'),
         });
     }
+
     return (
         <AuthLayout
             title="Create an account"
@@ -83,6 +120,17 @@ export default function Register({ departments, roles }: RegisterProps) {
                 </div>
 
                 <div className="grid gap-2">
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                        id="phone"
+                        value={data.phone}
+                        onChange={(e) => setData('phone', e.target.value)}
+                        required
+                    />
+                    <InputError message={errors.phone} />
+                </div>
+
+                <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
                     <Input
                         id="password"
@@ -116,9 +164,7 @@ export default function Register({ departments, roles }: RegisterProps) {
                         id="department_id"
                         className="rounded border px-2 py-1"
                         value={data.department_id}
-                        onChange={(e) =>
-                            setData('department_id', e.target.value)
-                        }
+                        onChange={(e) => handleDepartmentChange(e.target.value)}
                         required
                     >
                         <option value="">Select department</option>
@@ -133,32 +179,55 @@ export default function Register({ departments, roles }: RegisterProps) {
 
                 <div className="grid gap-2">
                     <Label htmlFor="role">Role</Label>
-                    <select
-                        id="role"
-                        className="rounded border px-2 py-1"
-                        value={data.role}
-                        onChange={(e) => setData('role', e.target.value)}
-                        required
-                    >
-                        <option value="">Select role</option>
-                        {roles.map((r) => (
-                            <option key={r.id} value={r.name}>
-                                {r.name}
-                            </option>
-                        ))}
-                    </select>
+                    {isITDepartment ? (
+                        <select
+                            id="role"
+                            className="rounded border px-2 py-1"
+                            value={data.role}
+                            onChange={(e) => setData('role', e.target.value)}
+                            required
+                        >
+                            <option value="">Select role</option>
+                            {availableRoles.map((r) => (
+                                <option key={r.id} value={r.name}>
+                                    {r.name}
+                                </option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="USER"
+                                    checked={data.role === 'USER'}
+                                    onChange={(e) => setData('role', e.target.value)}
+                                    className="h-4 w-4"
+                                    required
+                                />
+                                <span>USER</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="HOU"
+                                    checked={data.role === 'HOU'}
+                                    onChange={(e) => setData('role', e.target.value)}
+                                    className="h-4 w-4"
+                                    required
+                                />
+                                <span>HOU</span>
+                            </label>
+                        </div>
+                    )}
                     <InputError message={errors.role} />
-                </div>
-
-                <div className="grid gap-2">
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                        id="phone"
-                        value={data.phone}
-                        onChange={(e) => setData('phone', e.target.value)}
-                        required
-                    />
-                    <InputError message={errors.phone} />
+                    {!isITDepartment && (
+                        <p className="text-xs text-gray-500">
+                            Non-IT departments can only be assigned USER or HOU roles
+                        </p>
+                    )}
                 </div>
 
                 <Button
