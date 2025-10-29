@@ -234,6 +234,7 @@ export default function Dashboard({
                                         {(can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor || can_update_own_crf) && (
                                             <TableCell>
                                                 <div className="flex gap-2">
+
                                                     {/* to update for PIC */}
                                                     {can_update_own_crf && crf.assigned_to && (
                                                         <Link href={`/crfs/${crf.id}`}>
@@ -248,7 +249,7 @@ export default function Dashboard({
                                                     )}
 
                                                     {/* FOR ADMIN TO REASSIGN PIC */}
-                                                    {can_assign_itd && can_assign_vendor && (
+                                                    {(can_assign_itd || can_assign_vendor) && (
                                                         <Link href={`/crfs/${crf.id}`}>
                                                             <Button
                                                                 variant="outline"
