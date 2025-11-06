@@ -51,7 +51,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
-    const [nric, setNric] = useState(searchNric || '');
     const [searchValue, setSearchValue] = useState(searchNric || '');
     const [isSearching, setIsSearching] = useState(false);
     const [selectedCrf, setSelectedCrf] = useState<CrfResult | null>(null);
@@ -348,7 +347,7 @@ export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
 
                                 {/* CRF Details */}
                                 <div className="space-y-4">
-                                    <h4 className="font-semibold">Request Information</h4>
+                                    <h4 className="font-semibold">CRF Information</h4>
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div>
                                             <Label className="text-gray-600">Name</Label>
@@ -386,7 +385,7 @@ export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
                                 </div>
 
                                 {/* Assignment Info */}
-                                <div className="space-y-4">
+                                {/* <div className="space-y-4">
                                     <h4 className="font-semibold">Assignment Information</h4>
                                     <div className="grid grid-cols-2 gap-4 text-sm">
                                         <div>
@@ -398,20 +397,20 @@ export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
                                             <p className="font-medium">{selectedCrf.assigned_user?.name || 'Not assigned yet'}</p>
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
 
                                 {/* IT Remark */}
-                                {selectedCrf.it_remark && (
+                                {/* {selectedCrf.it_remark && (
                                     <div className="space-y-2">
                                         <h4 className="font-semibold">IT/Vendor Remark</h4>
                                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                             <p className="text-sm">{selectedCrf.it_remark}</p>
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                                 {/* Timestamps */}
-                                <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t">
+                                {/* <div className="grid grid-cols-2 gap-4 text-sm pt-4 border-t">
                                     <div>
                                         <Label className="text-gray-600">Created At</Label>
                                         <p className="font-medium">{new Date(selectedCrf.created_at).toLocaleString()}</p>
@@ -420,7 +419,7 @@ export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
                                         <Label className="text-gray-600">Last Updated</Label>
                                         <p className="font-medium">{new Date(selectedCrf.updated_at).toLocaleString()}</p>
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </DialogContent>
                     </Dialog>

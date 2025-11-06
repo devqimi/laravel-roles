@@ -26,6 +26,7 @@ type User = {
 
 type Props = {
     crfs: Crf;
+    can_view?: boolean;
     can_delete?: boolean;
     can_create?: boolean;
     can_approve?: boolean;
@@ -39,6 +40,7 @@ type Props = {
 
 export default function Dashboard({
     crfs,
+    can_view = false,
     can_delete = false,
     can_create = false,
     can_approve = false,
@@ -51,7 +53,7 @@ export default function Dashboard({
 }: Props) {
 
 
-    const { can } = usePermission();
+    // const { can } = usePermission();
     // const [deletingId, setDeletingId] = useState<number | null>(null);
     const [approvingId, setApprovingId] = useState<number | null>(null);
     const [acknowledgingId, setAcknowledgingId] = useState<number | null>(null);
@@ -208,7 +210,7 @@ export default function Dashboard({
                                     <TableHead className="font-bold text-white">
                                         Updated At
                                     </TableHead>
-                                    {(can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor) && (
+                                    {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor) && (
                                         <TableHead className="font-bold text-white">
                                             Actions
                                         </TableHead>
@@ -231,12 +233,12 @@ export default function Dashboard({
                                         <TableCell>{crf.approver?.name || '-'}</TableCell>
                                         <TableCell>{new Date(crf.created_at,).toLocaleString()}</TableCell>
                                         <TableCell>{new Date(crf.updated_at,).toLocaleString()}</TableCell>
-                                        {(can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor || can_update_own_crf) && (
+                                        {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor || can_update_own_crf) && (
                                             <TableCell>
                                                 <div className="flex gap-2">
 
                                                     {/* to update for PIC */}
-                                                    {can_update_own_crf && crf.assigned_to && (
+                                                    {(can_view || (can_update_own_crf && crf.assigned_to)) && (
                                                         <Link href={`/crfs/${crf.id}`}>
                                                             <Button
                                                                 variant="outline"
@@ -291,6 +293,7 @@ export default function Dashboard({
                                                         </Button>
                                                     )}
                                                     
+                                                    {/* to assign PIC */}
                                                     {(can_assign_itd || can_assign_vendor) && crf.application_status_id === 3 && (
                                                         <Button
                                                             variant="default"
@@ -315,6 +318,7 @@ export default function Dashboard({
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     )} */}
+                                                    
                                                 </div>
                                             </TableCell>
                                         )}
