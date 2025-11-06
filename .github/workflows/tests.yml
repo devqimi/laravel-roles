@@ -46,5 +46,15 @@ jobs:
       - name: Generate Application Key
         run: php artisan key:generate
 
-      - name: Tests
-        run: ./vendor/bin/phpunit
+      # 🧩 NEW: Prepare SQLite Database for testing
+      - name: Setup SQLite Database
+        run: |
+          mkdir -p database
+          touch database/database.sqlite
+          php artisan migrate --force
+          # (Optional) Uncomment if you have seeders
+          # php artisan db:seed --force
+
+      # ✅ Run tests
+      - name: Run Tests
+        run: php artisan test --without-tty
