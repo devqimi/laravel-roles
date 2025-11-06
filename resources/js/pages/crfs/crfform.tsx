@@ -28,12 +28,12 @@ type Props = {
 
 export default function CrfForm({ user, departments, categories }: Props) {
     const [filePreview, setFilePreview] = useState<string | null>(null);
-    const [formData, setFormData] = useState({
-        department_id: user?.department_id ?? '',
-        // other fields...
-    });
+    // const [formData, setFormData] = useState({
+    //     department_id: user?.department_id ?? '',
+    //     // other fields...
+    // });
 
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing,} = useForm({
         name: user?.name || '',
         nric: user?.nric || '',
         department_id: user?.department_id || '',
