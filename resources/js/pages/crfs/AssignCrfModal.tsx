@@ -111,7 +111,7 @@ export default function AssignCrfModal({
                                         name="assignType"
                                         value="itd"
                                         checked={assignType === 'itd'}
-                                        onChange={(e) => {
+                                        onChange={() => {
                                             setAssignType('itd');
                                             setSelectedUser('');
                                         }}
@@ -127,7 +127,7 @@ export default function AssignCrfModal({
                                         name="assignType"
                                         value="vendor"
                                         checked={assignType === 'vendor'}
-                                        onChange={(e) => {
+                                        onChange={() => {
                                             setAssignType('vendor');
                                             setSelectedUser('');
                                         }}
