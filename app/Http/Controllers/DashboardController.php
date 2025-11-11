@@ -74,7 +74,7 @@ class DashboardController extends Controller
             ->latest()
             ->paginate(10);
         }
-        // ✅ No permission at all
+        // No permission at all
         else {
             abort(403, 'Unauthorized to view CRFs');
         }
@@ -84,12 +84,13 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'crfs' => $crfs,
+            'can_view' =>Gate::allows('View Personal CRF'),
             'can_delete' =>Gate::allows('Close Assigned CRF'),
             'can_create' => Gate::allows('Create CRF'),
             'can_approve' => Gate::allows('verified CRF'),
             'can_acknowledge' => Gate::allows('Acknowledge CRF by ITD'),
-            'can_assign_itd' => Gate::allows('Assign CRF To ITD'),
-            'can_assign_vendor' => Gate::allows('Assign CRF to Vendor'),
+            'can_assign_itd' => Gate::allows('Assign CRF To ITD') || Gate::allows('Re Assign PIC ITD'),
+            'can_assign_vendor' => Gate::allows('Assign CRF to Vendor') || Gate::allows('Re Assign PIC Vendor'),
             'can_update_own_crf' => Gate::allows('Update CRF (own CRF)'),
             'itd_pics' => $itdPics,
             'vendor_pics' => $vendorPics,
