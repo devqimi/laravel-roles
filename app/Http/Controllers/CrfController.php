@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Crf;
+use App\Notifications;
 use Inertia\Inertia;
 use App\Models\Category;
 use App\Models\Department;
@@ -12,13 +13,15 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\CrfCreated;
+use App\Notifications\CrfAssigned;
+use App\Notifications\CrfVerified;
 
 class CrfController extends Controller
 {
     
     public function create(Request $request)
     {
-
         /** @var \App\Models\User|null $user */
         $user = $request->user();
             
@@ -59,6 +62,8 @@ class CrfController extends Controller
             'supporting_file' => 'nullable|file|mimes:pdf,png,jpeg|max:2048',
         ]);
 
+        $validated['application_status_id'] = 1;
+
         // Handle file upload if present
         if ($request->hasFile('supporting_file')) {
             $validated['supporting_file'] = $request->file('supporting_file')->store('crf_files', 'public');
@@ -70,12 +75,21 @@ class CrfController extends Controller
 
         // Add the current logged-in user ID
         $validated['user_id'] = Auth::id();
-        $validated['application_status_id'] = 1;
         
-        Crf::create($validated);
+        $crf = Crf::create($validated);
 
-        // Save to database
-        //\App\Models\Crf::create($validated);
+        // Add initial timeline entry
+        $crf->addTimelineEntry(
+            status: 'First Created',
+            actionType: 'status_change',
+            userId: Auth::id()
+        );
+
+        // Notify HOD
+        $hod = $this->getHOD($crf->department_id);
+        if ($hod) {
+            $hod->notify(new CrfCreated($crf));
+        }
 
         return redirect()->route('dashboard')->with('success', 'CRF submitted successfully!');
     }
@@ -92,17 +106,17 @@ class CrfController extends Controller
         return redirect()->route('dashboard')->with('success', 'CRF deleted successfully!');
     }
 
-    public function approve(Crf $crf){
-        
+    public function approve(Crf $crf)
+    {
         $user = Auth::user();
 
         // Check if CRF is from the same department as HOU
-        if($crf->department_id !== $user->department_id){
+        if ($crf->department_id !== $user->department_id) {
             abort(403, 'You can only approve CRFs from your department');
         }
 
         // Check if already approved
-        if ($crf->application_status_id != 1) { // 1 is created
+        if ($crf->application_status_id != 1) {
             return redirect()->route('dashboard')->with('error', 'CRF has already been processed');
         }
 
@@ -111,6 +125,20 @@ class CrfController extends Controller
             'application_status_id' => 2,
             'approved_by' => $user->id,
         ]);
+
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Verified',
+            actionType: 'status_change',
+            remark: 'Approved by ' . $user->name,
+            userId: $user->id
+        );
+
+        //Notify ITD Admin
+        $itdAdmins = $this->getITDAdmins();
+        foreach ($itdAdmins as $admin) {
+            $admin->notify(new CrfVerified($crf));
+    }
 
         return redirect()->route('dashboard')->with('success', 'CRF approved successfully!');
     }
@@ -126,6 +154,13 @@ class CrfController extends Controller
         $crf->update([
             'application_status_id' => 3,
         ]);
+
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'ITD Acknowledged',
+            actionType: 'status_change',
+            userId: Auth::id()
+        );
         
         return redirect()->route('dashboard')->with('success', 'CRF acknowledged successfully!');
     }
@@ -153,6 +188,17 @@ class CrfController extends Controller
             'assigned_to' => $validated['assigned_to'],
         ]);
 
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Assigned to ITD',
+            actionType: 'status_change',
+            remark: 'Assigned to ' . $user->name,
+            userId: Auth::id()
+        );
+
+        // Notify assigned user
+        $user->notify(new CrfAssigned($crf));
+
         return redirect()->route('dashboard')->with('success', 'CRF assigned to ITD successfully!');
     }
 
@@ -179,6 +225,17 @@ class CrfController extends Controller
             'assigned_to' => $validated['assigned_to'],
         ]);
 
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Assigned to Vendor',
+            actionType: 'status_change',
+            remark: 'Assigned to ' . $user->name,
+            userId: Auth::id()
+        );
+
+        // Notify assigned user
+        $user->notify(new CrfAssigned($crf));
+
         return redirect()->route('dashboard')->with('success', 'CRF assigned to Vendor successfully!');
     }
 
@@ -194,16 +251,29 @@ class CrfController extends Controller
         }
 
         // Verify the user has ITD PIC role
-        $user = User::find($validated['assigned_to']);
-        if (!$user->hasRole('ITD PIC')) {
+        $newUser = User::find($validated['assigned_to']);
+        if (!$newUser->hasRole('ITD PIC')) {
             return redirect()->back()->with('error', 'Selected user is not an ITD PIC');
         }
+
+        $oldUser = $crf->assigned_user;
 
         // Update to "Reassigned to ITD" (id: 6)
         $crf->update([
             'application_status_id' => 6,
             'assigned_to' => $validated['assigned_to'],
         ]);
+
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Reassigned to ITD',
+            actionType: 'status_change',
+            remark: 'Reassigned from ' . ($oldUser ? $oldUser->name : 'N/A') . ' to ' . $newUser->name,
+            userId: Auth::id()
+        );
+
+        // Notify new assigned user
+        $newUser->notify(new CrfAssigned($crf));
 
         return redirect()->back()->with('success', 'CRF reassigned to ITD successfully!');
     }
@@ -220,10 +290,12 @@ class CrfController extends Controller
         }
 
         // Verify the user has Vendor PIC role
-        $user = User::find($validated['assigned_to']);
-        if (!$user->hasRole('VENDOR PIC')) {
+        $newUser = User::find($validated['assigned_to']);
+        if (!$newUser->hasRole('VENDOR PIC')) {
             return redirect()->back()->with('error', 'Selected user is not a Vendor PIC');
         }
+
+        $oldUser = $crf->assigned_user;
 
         // Update to "Reassigned to Vendor" (id: 7)
         $crf->update([
@@ -231,19 +303,50 @@ class CrfController extends Controller
             'assigned_to' => $validated['assigned_to'],
         ]);
 
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Reassigned to Vendor',
+            actionType: 'status_change',
+            remark: 'Reassigned from ' . ($oldUser ? $oldUser->name : 'N/A') . ' to ' . $newUser->name,
+            userId: Auth::id()
+        );
+
+        // Notify new assigned user
+        $newUser->notify(new CrfAssigned($crf));
+
         return redirect()->back()->with('success', 'CRF reassigned to Vendor successfully!');
     }
 
     public function show(Crf $crf)
     {
-        $crf->load(['department', 'category', 'application_status', 'approver', 'assigned_user']);
+        $crf->load([
+            'department',
+            'category',
+            'application_status',
+            'approver',
+            'assigned_user',
+            'statusTimeline.user'
+        ]);
+
+        // Format timeline for frontend
+        $statusTimeline = $crf->statusTimeline->map(function ($timeline) {
+            return [
+                'id' => $timeline->id,
+                'status' => $timeline->status,
+                'action_by' => $timeline->user ? $timeline->user->name : 'System',
+                'remark' => $timeline->remark,
+                'created_at' => $timeline->created_at,
+            ];
+        });
         
         // Get ITD and Vendor PICs for reassignment
         $itdPics = User::role('ITD PIC')->select('id', 'name')->get();
         $vendorPics = User::role('VENDOR PIC')->select('id', 'name')->get();
         
         return Inertia::render('crfs/show', [
-            'crf' => $crf,
+            'crf' => array_merge($crf->toArray(), [
+                'status_timeline' => $statusTimeline,
+            ]),
             'can_update' => Gate::allows('Update CRF (own CRF)') && $crf->assigned_to === Auth::id(),
             'can_reassign_itd' => Gate::allows('Re Assign PIC ITD'),
             'can_reassign_vendor' => Gate::allows('Re Assign PIC Vendor'),
@@ -263,7 +366,28 @@ class CrfController extends Controller
             'it_remark' => 'nullable|string',
         ]);
 
+        // Check if remark was changed
+        $remarkChanged = $crf->it_remark !== $validated['it_remark'];
+
         $crf->update($validated);
+
+        if ($remarkChanged && !empty($validated['it_remark'])) {
+            // Add remark to remarks table for history
+            $crf->remarks()->create([
+                'user_id' => Auth::id(),
+                'remark' => $validated['it_remark'],
+                'status' => $crf->application_status->status,
+            ]);
+
+            // Add timeline entry
+            $actionType = $crf->it_remark ? 'remark_updated' : 'remark_added';
+            $crf->addTimelineEntry(
+                status: $crf->application_status->status,
+                actionType: $actionType,
+                remark: $validated['it_remark'],
+                userId: Auth::id()
+            );
+        }
 
         return redirect()->back()->with('success', 'Remark updated successfully');
     }
@@ -276,6 +400,13 @@ class CrfController extends Controller
 
         $crf->update(['application_status_id' => 8]); // Work in progress
 
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Work in progress',
+            actionType: 'status_change',
+            userId: Auth::id()
+        );
+
         return redirect()->back()->with('success', 'CRF marked as in progress');
     }
 
@@ -286,6 +417,13 @@ class CrfController extends Controller
         }
 
         $crf->update(['application_status_id' => 9]); // Closed
+
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Closed',
+            actionType: 'status_change',
+            userId: Auth::id()
+        );
 
         return redirect()->back()->with('success', 'CRF marked as closed');
     }
@@ -323,5 +461,21 @@ class CrfController extends Controller
             'searchResults' => $searchResults,
             'searchValue' => $searchValue,
         ]);
+    }
+
+    // Helper method to get HOD
+    private function getHOD($departmentId)
+    {
+        // Get HOD by role and department
+        return User::role('HOU')
+            ->where('department_id', $departmentId)
+            ->first();
+    }
+
+    // Helper method to get ITD Admins
+    private function getITDAdmins()
+    {
+        // Get all users with ITD Admin role
+        return User::role('ITD Admin')->get();
     }
 }
