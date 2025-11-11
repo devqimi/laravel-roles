@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Role;
+use Illuminate\Support\Facades\Auth;
 
 class Crf extends Model
 {
@@ -60,5 +61,23 @@ class Crf extends Model
 
     public function assigned_user(){
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function remarks(){
+        return $this->hasMany(CrfRemark::class, 'crf_id');
+    }
+
+    public function statusTimeline(){
+        return $this->hasMany(CrfStatusTimeline::class, 'crf_id')->orderBy('created_at', 'asc');
+    }
+
+    public function addTimelineEntry(string $status, string $actionType, ?string $remark = null, ?int $userId = null): void
+    {
+        $this->statusTimeline()->create([
+            'user_id' => $userId ?? Auth::id(),
+            'status' => $status,
+            'remark' => $remark,
+            'action_type' => $actionType,
+        ]);
     }
 }
