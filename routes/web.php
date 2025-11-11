@@ -10,6 +10,7 @@ use App\Http\Controllers\CrfController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PermissionController;
 
 Route::get('/', function () {
@@ -85,6 +86,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('crfs/{crf}/reassign-to-itd', [CrfController::class, 'reassignToItd'])->name('crfs.reassignToItd')->can('Re Assign PIC ITD');
     Route::post('crfs/{crf}/reassign-to-vendor', [CrfController::class, 'reassignToVendor'])->name('crfs.reassignToVendor')->can('Re Assign PIC Vendor');
 
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 });
 
 require __DIR__ . '/settings.php';
