@@ -16,6 +16,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { 
+    Table, 
+    TableHeader, 
+    TableRow, 
+    TableHead, 
+    TableBody,
+    TableCell,
+} from '@/components/ui/table';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Textarea } from '@headlessui/react';
@@ -26,6 +34,14 @@ import { useState } from 'react';
 type User = {
     id: number;
     name: string;
+};
+
+type StatusTimeline = {
+    id: number;
+    status: string;
+    action_by: string;
+    remark: string | null;
+    created_at: string;
 };
 
 type CrfData = {
@@ -45,6 +61,7 @@ type CrfData = {
     assigned_to: number | null;
     created_at: string;
     it_remark: string | null;
+    status_timeline?: StatusTimeline[];
 };
 
 type Props = {
@@ -107,10 +124,10 @@ export default function ShowCrf({
 
     const handleOpenReassignModal = () => {
         // Auto-select type based on current assignment
-        if (crf.application_status_id === 4 || crf.application_status_id === 6 || crf.application_status_id === 8) {
+        if (crf.application_status_id === 4 || crf.application_status_id === 6) {
             // Currently assigned to ITD
             setReassignType('itd');
-        } else if (crf.application_status_id === 5 || crf.application_status_id === 7 || crf.application_status_id === 8) {
+        } else if (crf.application_status_id === 5 || crf.application_status_id === 7) {
             // Currently assigned to Vendor
             setReassignType('vendor');
         }
@@ -296,6 +313,83 @@ export default function ShowCrf({
                                 <p className="rounded border p-3 bg-gray-50">{crf.it_remark}</p>
                             </div>
                         )}
+
+                        {/* Status timeline table/log */}
+                        <div className="space-y-2">
+                            <h3 className="text-lg font-semibold">Status Timeline</h3>
+                            <div className="rounded-md border overflow-hidden">
+                                <Table>
+                                    <TableHeader className="bg-slate-500">
+                                        <TableRow>
+                                            <TableHead className="font-bold text-white w-16">
+                                                No.
+                                            </TableHead>
+                                            <TableHead className="font-bold text-white">
+                                                Status
+                                            </TableHead>
+                                            <TableHead className="font-bold text-white">
+                                                Action By
+                                            </TableHead>
+                                            <TableHead className="font-bold text-white w-48">
+                                                Time
+                                            </TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {crf.status_timeline && crf.status_timeline.length > 0 ? (
+                                            crf.status_timeline.map((timeline, index) => (
+                                                <TableRow key={timeline.id} className="hover:bg-gray-50">
+                                                    <TableCell className="font-medium align-top">
+                                                        {index + 1}
+                                                    </TableCell>
+                                                    <TableCell className="align-top">
+                                                        <div className="space-y-2">
+                                                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                                                timeline.status === 'Closed' 
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : timeline.status === 'Work in progress'
+                                                                    ? 'bg-blue-100 text-blue-800'
+                                                                    : timeline.status.includes('Assigned') || timeline.status.includes('Reassigned')
+                                                                    ? 'bg-purple-100 text-purple-800'
+                                                                    : timeline.status === 'Verified'
+                                                                    ? 'bg-yellow-100 text-yellow-800'
+                                                                    : 'bg-gray-100 text-gray-800'
+                                                            }`}>
+                                                                {timeline.status}
+                                                            </span>
+                                                            {timeline.remark && (
+                                                                <p className="text-sm text-gray-700 whitespace-pre-wrap mt-2">
+                                                                    {timeline.remark}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                    <TableCell className="align-top">
+                                                        {timeline.action_by}
+                                                    </TableCell>
+                                                    <TableCell className="text-sm text-gray-600 align-top">
+                                                        {new Date(timeline.created_at).toLocaleString('en-MY', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+                                                    No status timeline available
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
+
                     </CardContent>
                 </Card>
 
@@ -316,7 +410,7 @@ export default function ShowCrf({
                             </div>
 
                             {/* Assignment Type (if both permissions) */}
-                            {can_reassign_itd && can_reassign_vendor && (
+                            {(can_reassign_itd && can_reassign_vendor) && (
                                 <div className="grid gap-2">
                                     <Label>Reassign To</Label>
                                     <div className="flex gap-4">
