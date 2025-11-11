@@ -8,12 +8,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Foundation\Auth\Access\Authorizable; // ✅ Add this
+use Illuminate\Foundation\Auth\Access\Authorizable;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable, HasRoles, Authorizable;
+    use HasFactory, TwoFactorAuthenticatable, HasRoles, Authorizable, Notifiable;
 
     /**
      * The attributes that are mass assignable.
