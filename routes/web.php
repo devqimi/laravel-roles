@@ -12,6 +12,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\CrfAttachmentController;
 
 Route::get('/', function () {
     return Inertia::render('welcome');
@@ -91,6 +92,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 });
+
+Route::get('/crfs/attachments/{attachment}/download', [CrfAttachmentController::class, 'download'])->name('crfs.attachments.download');
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';

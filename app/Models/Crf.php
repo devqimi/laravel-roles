@@ -80,4 +80,9 @@ class Crf extends Model
             'action_type' => $actionType,
         ]);
     }
+
+    public function attachments()
+    {
+        return $this->hasMany(CrfAttachment::class);
+    }
 }
