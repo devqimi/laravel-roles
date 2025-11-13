@@ -26,14 +26,18 @@ type Props = {
     user: User;
 };
 
-export default function CrfForm({ user, departments, categories }: Props) {
-    const [filePreview, setFilePreview] = useState<string | null>(null);
-    // const [formData, setFormData] = useState({
-    //     department_id: user?.department_id ?? '',
-    //     // other fields...
-    // });
+type FilePreview = {
+    file: File;
+    preview: string | 'unsupported';
+};
 
-    const { data, setData, post, processing,} = useForm({
+export default function CrfForm({ user, departments, categories }: Props) {
+    const [filePreviews, setFilePreviews] = useState<FilePreview[]>([]);
+     const [fileErrors, setFileErrors] = useState<string[]>([]);
+
+     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+     const { data, setData, post, processing,} = useForm({
         name: user?.name || '',
         nric: user?.nric || '',
         department_id: user?.department_id || '',
@@ -42,30 +46,83 @@ export default function CrfForm({ user, departments, categories }: Props) {
         category_id: '',
         issue: '',
         reason: '',
-        supporting_file: null as File | null,
+        supporting_files: [] as File[],
     });
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0];
-        if (!file) {
-            setFilePreview(null);
-            setData('supporting_file', null); // ✅ Clear file from form data
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) {
             return;
         }
 
-        setData('supporting_file', file);
+            const errors: string[] = [];
 
-        const fileType = file.type;
-        if (fileType === 'application/pdf') {
-            setFilePreview(URL.createObjectURL(file));
-        } else if (fileType.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = (ev: ProgressEvent<FileReader>) =>
-                setFilePreview(ev.target?.result as string);
-            reader.readAsDataURL(file);
-        } else {
-            setFilePreview('unsupported');
-        }
+        // Process each file and add to previews
+        files.forEach((file) => {
+            const fileType = file.type;
+            const fileName = file.name.toLowerCase();
+            let preview: string | 'unsupported';
+
+                // Check file size
+                if (file.size > MAX_FILE_SIZE) {
+                    errors.push(`${file.name} exceeds 5MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+                    return;
+                }
+
+            // Check for PDF
+            if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
+                preview = URL.createObjectURL(file);
+                setFilePreviews((prev) => [...prev, { file, preview }]);
+            }
+            // Check for images (jpg, gif, png)
+            else if (fileType.startsWith('image/') || fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.gif') || fileName.endsWith('.png')) {
+                const reader = new FileReader();
+                reader.onload = (ev: ProgressEvent<FileReader>) => {
+                    const imgPreview = ev.target?.result as string;
+                    setFilePreviews((prev) => [...prev, { file, preview: imgPreview }]);
+                };
+                reader.readAsDataURL(file);
+            }
+            // For documents (doc, docx, xls, xlsx) - show as unsupported (no preview)
+            else if (
+                fileName.endsWith('.doc') ||
+                fileName.endsWith('.docx') ||
+                fileName.endsWith('.xls') ||
+                fileName.endsWith('.xlsx') ||
+                fileType === 'application/msword' ||
+                fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                fileType === 'application/vnd.ms-excel' ||
+                fileType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ) {
+                preview = 'unsupported';
+                setFilePreviews((prev) => [...prev, { file, preview }]);
+            } else {
+                preview = 'unsupported';
+                setFilePreviews((prev) => [...prev, { file, preview }]);
+            }
+        });
+
+        // Add files to form data
+        setData('supporting_files', [...data.supporting_files, ...files]);
+        setFileErrors(errors);
+    }
+
+    function removeFile(index: number) {
+        setFilePreviews((prev) => prev.filter((_, i) => i !== index));
+        setData('supporting_files', data.supporting_files.filter((_, i) => i !== index));
+           // Clear errors when removing a file
+           setFileErrors([]);
+    }
+
+    function downloadFile(file: File) {
+        const url = URL.createObjectURL(file);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     }
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -194,37 +251,87 @@ export default function CrfForm({ user, departments, categories }: Props) {
                 </div>
                 <div>
                     <label className="mb-1 block">
-                        Upload Document (PDF/PNG/JPEG)
+                        Upload Document (JPG/GIF/PDF/DOC/DOCX/XLS/XLSX)
                     </label>
                     <input
                         className="mb-2 w-full rounded border border-blue-900 px-2 py-1"
                         type="file"
-                        name="supporting_file"
-                        accept=".pdf, image/png, image/jpeg"
+                        name="supporting_files"
+                        accept=".pdf,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx"
+                        multiple
                         onChange={handleFileChange}
                     />
-                    {filePreview && (
-                        <div className="mt-2">
-                            <p className="text-sm font-semibold text-gray-600">
-                                Preview:
-                            </p>
-                            {filePreview === 'unsupported' ? (
-                                <p className="text-red-500">
-                                    Unsupported file type.
+                        {fileErrors.length > 0 && (
+                            <div className="mb-3 rounded border border-red-300 bg-red-50 p-3">
+                                <p className="mb-1 text-sm font-semibold text-red-700">
+                                    File Upload Errors:
                                 </p>
-                            ) : filePreview.endsWith('.pdf') ? (
-                                <iframe
-                                    src={filePreview}
-                                    className="h-32 w-full"
-                                    frameBorder={0}
-                                ></iframe>
-                            ) : (
-                                <img
-                                    src={filePreview}
-                                    className="max-h-32 rounded border"
-                                    alt="Preview"
-                                />
-                            )}
+                                <ul className="space-y-1">
+                                    {fileErrors.map((error, idx) => (
+                                        <li key={idx} className="text-xs text-red-600">
+                                            • {error}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    {filePreviews.length > 0 && (
+                        <div className="mt-4">
+                            <p className="mb-2 text-sm font-semibold text-gray-600">
+                                Uploaded Files ({filePreviews.length}):
+                            </p>
+                            <div className="space-y-3">
+                                {filePreviews.map((item, index) => (
+                                    <div
+                                        key={index}
+                                        className="rounded border border-gray-300 bg-gray-50 p-3"
+                                    >
+                                        <div className="mb-2 flex items-center justify-between">
+                                            <span className="text-sm font-medium text-gray-700">
+                                                {item.file.name}
+                                            </span>
+                                            <div className="space-x-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        downloadFile(item.file)
+                                                    }
+                                                    className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700"
+                                                >
+                                                    Download
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() =>
+                                                        removeFile(index)
+                                                    }
+                                                    className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {item.preview === 'unsupported' ? (
+                                            <p className="text-xs text-red-500">
+                                                Unsupported file type preview.
+                                            </p>
+                                        ) : item.file.type ===
+                                          'application/pdf' ? (
+                                            <iframe
+                                                src={item.preview}
+                                                className="h-40 w-full rounded border border-gray-200"
+                                                frameBorder={0}
+                                            ></iframe>
+                                        ) : (
+                                            <img
+                                                src={item.preview}
+                                                className="max-h-40 rounded border border-gray-200"
+                                                alt={`Preview ${index}`}
+                                            />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
@@ -252,9 +359,9 @@ export default function CrfForm({ user, departments, categories }: Props) {
                                 category_id: '',
                                 issue: '',
                                 reason: '',
-                                supporting_file: null,
+                                supporting_files: [],
                             });
-                            setFilePreview(null);
+                            setFilePreviews([]);
                         }}
                     >
                         Reset
