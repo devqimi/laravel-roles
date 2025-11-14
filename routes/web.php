@@ -91,9 +91,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
-});
+    
+    Route::get('crf-attachments/{attachment}/download', [CrfAttachmentController::class, 'download'])->name('crf-attachments.download');});
 
-Route::get('/crfs/attachments/{attachment}/download', [CrfAttachmentController::class, 'download'])->name('crfs.attachments.download');
 
 require __DIR__ . '/settings.php';
 require __DIR__ . '/auth.php';
