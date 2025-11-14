@@ -3,19 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Crf;
-use App\Notifications;
+use App\Models\User;
 use Inertia\Inertia;
+use App\Notifications;
 use App\Models\Category;
 use App\Models\Department;
 use Illuminate\Http\Request;
+use App\Models\CrfAttachment;
 use App\Models\ApplicationStatus;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use App\Notifications\CrfCreated;
 use App\Notifications\CrfAssigned;
 use App\Notifications\CrfVerified;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
+
 
 class CrfController extends Controller
 {
@@ -50,48 +53,101 @@ class CrfController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'nric' => 'required|string|max:20',
-            'department_id' => 'required|exists:departments,id',
-            'designation' => 'required|string|max:255',
-            'extno' => 'required|string|max:10',
-            'category_id' => 'required|exists:categories,id',
-            'issue' => 'required|string',
-            'reason' => 'nullable|string',
-            'supporting_file' => 'nullable|file|mimes:pdf,png,jpeg|max:2048',
-        ]);
 
-        $validated['application_status_id'] = 1;
-
-        // Handle file upload if present
-        if ($request->hasFile('supporting_file')) {
-            $validated['supporting_file'] = $request->file('supporting_file')->store('crf_files', 'public');
-        }
-
-        // Map 'name' to 'fname' for the database
-        $validated['fname'] = $validated['name'];
-        unset($validated['name']);
-
-        // Add the current logged-in user ID
-        $validated['user_id'] = Auth::id();
+        // Add logging
+        Log::info('=== CRF Store Method Started ===');
+        Log::info('Has supporting_file in request: ' . ($request->has('supporting_file') ? 'YES' : 'NO'));
+        Log::info('Has file: ' . ($request->hasFile('supporting_file') ? 'YES' : 'NO'));
         
-        $crf = Crf::create($validated);
-
-        // Add initial timeline entry
-        $crf->addTimelineEntry(
-            status: 'First Created',
-            actionType: 'status_change',
-            userId: Auth::id()
-        );
-
-        // Notify HOD
-        $hod = $this->getHOD($crf->department_id);
-        if ($hod) {
-            $hod->notify(new CrfCreated($crf));
+        if ($request->hasFile('supporting_file')) {
+            Log::info('File count: ' . count($request->file('supporting_file')));
         }
 
-        return redirect()->route('dashboard')->with('success', 'CRF submitted successfully!');
+        try {
+
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'nric' => 'required|string|max:20',
+                'department_id' => 'required|exists:departments,id',
+                'designation' => 'required|string|max:255',
+                'extno' => 'required|string|max:10',
+                'category_id' => 'required|exists:categories,id',
+                'issue' => 'required|string',
+                'reason' => 'nullable|string',
+                'supporting_file' => 'nullable|array',
+                'supporting_file.*' => 'file|mimes:jpg,jpeg,gif,pdf,doc,docx,xls,xlsx|max:5120',
+            ]);
+    
+            Log::info('Validation passed');
+    
+            // Debug: Check if files are present
+            Log::info('Has files: ' . ($request->hasFile('supporting_file') ? 'YES' : 'NO'));
+            
+            
+            $validated['application_status_id'] = 1;
+            
+            // Map 'name' to 'fname' for the database
+            $validated['fname'] = $validated['name'];
+            unset($validated['name']);
+            
+            // Add the current logged-in user ID
+            $validated['user_id'] = Auth::id();
+            
+            $crf = Crf::create($validated);
+            
+            if ($request->hasFile('supporting_file')) {
+                Log::info('Number of files: ' . count($request->file('supporting_file')));
+            }
+            
+            // Handle file upload if present
+            if ($request->hasFile('supporting_file') && is_array($request->file('supporting_file'))) {
+                
+                foreach($request->file('supporting_file') as $file){
+                    
+                    $filename = time() . '_' . bin2hex(random_bytes(4)) . '.' . $file->getClientOriginalExtension();
+                    $path = $file->storeAs("crfs/{$crf->id}", $filename, 'public');
+                    
+                    Log::info('File stored: ' . $path);
+                    
+                    $attachment = CrfAttachment::create([
+                        'crf_id' => $crf->id,
+                        'filename' => $file->getClientOriginalName(),
+                        'path' => $path,
+                        'mime' => $file->getClientMimeType(),
+                        'size' => $file->getSize(),
+                    ]);
+                    
+                    Log::info('Attachment created with ID: ' . $attachment->id);
+                }
+    
+            } else {
+                Log::info('No files to upload');
+            }
+    
+            // Add initial timeline entry
+            $crf->addTimelineEntry(
+                status: 'First Created',
+                actionType: 'status_change',
+                userId: Auth::id()
+            );
+    
+            // Notify HOD
+            $hod = $this->getHOD($crf->department_id);
+            if ($hod) {
+                $hod->notify(new CrfCreated($crf));
+            }
+    
+            Log::info('=== CRF Store Method Completed Successfully ===');
+            return redirect()->route('dashboard')->with('success', 'CRF submitted successfully!');
+
+        } catch (\Exception $e) {
+            Log::error('CRF creation failed: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Failed to create CRF: ' . $e->getMessage());
+        }
+
     }
 
     public function destroy(Crf $crf)
@@ -325,7 +381,8 @@ class CrfController extends Controller
             'application_status',
             'approver',
             'assigned_user',
-            'statusTimeline.user'
+            'statusTimeline.user',
+            'attachments',
         ]);
 
         // Format timeline for frontend
@@ -338,6 +395,17 @@ class CrfController extends Controller
                 'created_at' => $timeline->created_at,
             ];
         });
+
+        // Transform attachments to match frontend type
+        $attachments = $crf->attachments->map(function ($attachment) {
+            return [
+                'id' => $attachment->id,
+                'name' => $attachment->filename,  // Map 'filename' to 'name'
+                'url' => 'http://' . request()->getHost() . '/storage/' . $attachment->path,
+                'mime' => $attachment->mime,
+                'size' => $attachment->size,  // In bytes (frontend will convert to MB)
+            ];
+        });
         
         // Get ITD and Vendor PICs for reassignment
         $itdPics = User::role('ITD PIC')->select('id', 'name')->get();
@@ -346,6 +414,7 @@ class CrfController extends Controller
         return Inertia::render('crfs/show', [
             'crf' => array_merge($crf->toArray(), [
                 'status_timeline' => $statusTimeline,
+                'attachments' => $attachments,
             ]),
             'can_update' => Gate::allows('Update CRF (own CRF)') && $crf->assigned_to === Auth::id(),
             'can_reassign_itd' => Gate::allows('Re Assign PIC ITD'),
