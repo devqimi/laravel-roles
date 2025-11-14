@@ -1,4 +1,5 @@
 import { useForm } from '@inertiajs/react';
+import { router } from '@inertiajs/react';
 import React, { useState } from 'react';
 
 type Department = {
@@ -33,11 +34,13 @@ type FilePreview = {
 
 export default function CrfForm({ user, departments, categories }: Props) {
     const [filePreviews, setFilePreviews] = useState<FilePreview[]>([]);
-     const [fileErrors, setFileErrors] = useState<string[]>([]);
+    const [fileErrors, setFileErrors] = useState<string[]>([]);
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-     const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
-     const { data, setData, post, processing,} = useForm({
+    const [formData, setFormData] = useState({
         name: user?.name || '',
         nric: user?.nric || '',
         department_id: user?.department_id || '',
@@ -46,16 +49,18 @@ export default function CrfForm({ user, departments, categories }: Props) {
         category_id: '',
         issue: '',
         reason: '',
-        supporting_files: [] as File[],
+        supporting_file: [] as File[],
     });
 
     function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+
         const files = Array.from(e.target.files || []);
+        
         if (files.length === 0) {
             return;
         }
 
-            const errors: string[] = [];
+        const errors: string[] = [];
 
         // Process each file and add to previews
         files.forEach((file) => {
@@ -63,11 +68,11 @@ export default function CrfForm({ user, departments, categories }: Props) {
             const fileName = file.name.toLowerCase();
             let preview: string | 'unsupported';
 
-                // Check file size
-                if (file.size > MAX_FILE_SIZE) {
-                    errors.push(`${file.name} exceeds 5MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-                    return;
-                }
+            // Check file size
+            if (file.size > MAX_FILE_SIZE) {
+                errors.push(`${file.name} exceeds 5MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
+                return;
+            }
 
             // Check for PDF
             if (fileType === 'application/pdf' || fileName.endsWith('.pdf')) {
@@ -103,15 +108,20 @@ export default function CrfForm({ user, departments, categories }: Props) {
         });
 
         // Add files to form data
-        setData('supporting_files', [...data.supporting_files, ...files]);
+        setFormData(prev => ({
+                    ...prev,
+                    supporting_file: [...prev.supporting_file, ...files]
+                }));
         setFileErrors(errors);
     }
 
     function removeFile(index: number) {
         setFilePreviews((prev) => prev.filter((_, i) => i !== index));
-        setData('supporting_files', data.supporting_files.filter((_, i) => i !== index));
-           // Clear errors when removing a file
-           setFileErrors([]);
+        setFormData(prev => ({
+            ...prev,
+            supporting_file: prev.supporting_file.filter((_, i) => i !== index)
+        }));
+        setFileErrors([]);
     }
 
     function downloadFile(file: File) {
@@ -127,9 +137,76 @@ export default function CrfForm({ user, departments, categories }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        post('/crfs', {
-            forceFormData: true, // ✅ Important for file uploads
+        setProcessing(true);
+
+        // Create FormData
+        const data = new FormData();
+
+        // Add all form fields
+        
+        data.append('name', formData.name);
+        data.append('nric', formData.nric);
+        data.append('department_id', String(formData.department_id));
+        data.append('designation', formData.designation);
+        data.append('extno', formData.extno);
+        data.append('category_id', String(formData.category_id));
+        data.append('issue', formData.issue);
+        data.append('reason', formData.reason || '');
+
+        console.log('Form data:', data);
+        console.log('Files:', formData.supporting_file);
+
+        formData.supporting_file.forEach((file, i) => {
+            data.append('supporting_file[]', file);
+            console.log(`File ${i + 1}:`, file.name, file.size, file.type);
         });
+
+        console.log('📝 Submitting with', formData.supporting_file.length, 'files');
+
+        // Use router.post with FormData
+        router.post('/crfs', data, {
+            onSuccess: () => {
+
+                console.log('✅ Success!');
+                
+                setProcessing(false);
+                // Reset form
+                setFormData({
+                    name: user?.name || '',
+                    nric: user?.nric || '',
+                    department_id: user?.department_id || '',
+                    designation: '',
+                    extno: '',
+                    category_id: '',
+                    issue: '',
+                    reason: '',
+                    supporting_file: [],
+                });
+                setFilePreviews([]);
+                setFileErrors([]);
+            },
+            onError: (errors) => {
+                console.error('❌ Errors:', errors);
+                setErrors(errors);
+                setProcessing(false);
+            },
+        });
+    };
+
+    const handleReset = () => {
+        setFormData({
+            name: user?.name || '',
+            nric: user?.nric || '',
+            department_id: user?.department_id || '',
+            designation: '',
+            extno: '',
+            category_id: '',
+            issue: '',
+            reason: '',
+            supporting_file: [],
+        });
+        setFilePreviews([]);
+        setFileErrors([]);
     };
 
     return (
@@ -152,6 +229,8 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     akan mengambil masa yang lebih panjang untuk diselesaikan.
                 </p>
                 <div>
+
+                    {/* name */}
                     <label className="mb-1 block">Name</label>
                     <input
                         className="w-full rounded border border-blue-900 px-2 py-1"
@@ -163,6 +242,8 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     />
                 </div>
                 <div>
+
+                    {/* nric */}
                     <label className="mb-1 block">NRIC</label>
                     <input
                         className="w-full rounded border border-blue-900 px-2 py-1"
@@ -174,6 +255,8 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     />
                 </div>
                 <div>
+
+                    {/* department */}
                     <label className="mb-1 block">Department</label>
                     <input
                         name="department_id"
@@ -188,34 +271,40 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     />
                 </div>
                 <div>
+
+                    {/* designation */}
                     <label className="mb-1 block">Designation</label>
                     <input
                         className="w-full rounded border border-blue-900 px-2 py-1"
                         type="text"
                         name="designation"
-                        value={data.designation}
-                        onChange={(e) => setData('designation', e.target.value)}
+                        value={formData.designation}
+                        onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
                         required
                     />
                 </div>
                 <div>
+
+                    {/* ext hp no */}
                     <label className="mb-1 block">Ext & HP No</label>
                     <input
                         className="w-full rounded border border-blue-900 px-2 py-1"
                         type="text"
                         name="extno"
-                        value={data.extno}
-                        onChange={(e) => setData('extno', e.target.value)}
+                        value={formData.extno}
+                        onChange={(e) => setFormData(prev => ({ ...prev, extno: e.target.value }))}
                         required
                     />
                 </div>
                 <div>
+
+                    {/* category */}
                     <label className="mb-1 block">Category</label>
                     <select
                         name="category_id"
                         className="w-full rounded border border-blue-900 px-2 py-1"
-                        value={data.category_id}
-                        onChange={(e) => setData('category_id', e.target.value)}
+                        value={formData.category_id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
                         required
                     >
                         <option value="">Select</option>
@@ -227,54 +316,66 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     </select>
                 </div>
                 <div>
+
+                    {/* issue */}
                     <label className="mb-1 block">
                         Change / Functionality Required
                     </label>
                     <textarea
                         className="w-full rounded border border-blue-900 px-2 py-1"
                         name="issue"
-                        value={data.issue}
-                        onChange={(e) => setData('issue', e.target.value)}
+                        value={formData.issue}
+                        onChange={(e) => setFormData(prev => ({ ...prev, issue: e.target.value }))}
                         required
                     />
                 </div>
                 <div>
+
+                    {/* reason */}
                     <label className="mb-1 block">
                         Reason to request (Optional)
                     </label>
                     <textarea
                         className="w-full rounded border border-blue-900 px-2 py-1"
                         name="reason"
-                        value={data.reason}
-                        onChange={(e) => setData('reason', e.target.value)}
+                        value={formData.reason}
+                        onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
                     />
                 </div>
                 <div>
+
+                    {/* file upload */}
                     <label className="mb-1 block">
                         Upload Document (JPG/GIF/PDF/DOC/DOCX/XLS/XLSX)
                     </label>
                     <input
                         className="mb-2 w-full rounded border border-blue-900 px-2 py-1"
                         type="file"
-                        name="supporting_files"
+                        name="supporting_file"
                         accept=".pdf,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx"
                         multiple
                         onChange={handleFileChange}
                     />
-                        {fileErrors.length > 0 && (
-                            <div className="mb-3 rounded border border-red-300 bg-red-50 p-3">
-                                <p className="mb-1 text-sm font-semibold text-red-700">
-                                    File Upload Errors:
-                                </p>
-                                <ul className="space-y-1">
-                                    {fileErrors.map((error, idx) => (
-                                        <li key={idx} className="text-xs text-red-600">
-                                            • {error}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
+
+                    {errors.supporting_file && (
+                        <p className="text-sm text-red-600 mt-1">{errors.supporting_file}</p>
+                    )}
+
+                    {fileErrors.length > 0 && (
+                        <div className="mb-3 rounded border border-red-300 bg-red-50 p-3">
+                            <p className="mb-1 text-sm font-semibold text-red-700">
+                                File Upload Errors:
+                            </p>
+                            <ul className="space-y-1">
+                                {fileErrors.map((error, idx) => (
+                                    <li key={idx} className="text-xs text-red-600">
+                                        • {error}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {filePreviews.length > 0 && (
                         <div className="mt-4">
                             <p className="mb-2 text-sm font-semibold text-gray-600">
@@ -291,7 +392,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                                                 {item.file.name}
                                             </span>
                                             <div className="space-x-2">
-                                                <button
+                                                {/* <button
                                                     type="button"
                                                     onClick={() =>
                                                         downloadFile(item.file)
@@ -299,7 +400,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                                                     className="rounded bg-green-600 px-3 py-1 text-xs text-white hover:bg-green-700"
                                                 >
                                                     Download
-                                                </button>
+                                                </button> */}
                                                 <button
                                                     type="button"
                                                     onClick={() =>
@@ -313,10 +414,9 @@ export default function CrfForm({ user, departments, categories }: Props) {
                                         </div>
                                         {item.preview === 'unsupported' ? (
                                             <p className="text-xs text-red-500">
-                                                Unsupported file type preview.
+                                                Preview not available for this file type.
                                             </p>
-                                        ) : item.file.type ===
-                                          'application/pdf' ? (
+                                        ) : item.file.type === 'application/pdf' ? (
                                             <iframe
                                                 src={item.preview}
                                                 className="h-40 w-full rounded border border-gray-200"
@@ -348,21 +448,8 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     </button>
                     <button
                         className="rounded bg-blue-900 px-4 py-2 text-white"
-                        type="reset"
-                        onClick={() => {
-                            setData({
-                                name: user?.name || '',
-                                nric: user?.nric || '',
-                                department_id: user?.department_id || '',
-                                designation: '',
-                                extno: '',
-                                category_id: '',
-                                issue: '',
-                                reason: '',
-                                supporting_files: [],
-                            });
-                            setFilePreviews([]);
-                        }}
+                        type="button"
+                        onClick={handleReset}
                     >
                         Reset
                     </button>
