@@ -28,7 +28,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Textarea } from '@headlessui/react';
 import { Head, router, useForm } from '@inertiajs/react';
-import { UserCog } from 'lucide-react';
+import { UserCog, FileIcon, Download } from 'lucide-react';
 import { useState } from 'react';
 
 type User = {
@@ -42,6 +42,14 @@ type StatusTimeline = {
     action_by: string;
     remark: string | null;
     created_at: string;
+};
+
+type Attachment = {
+    id: number;
+    name: string;
+    url: string;
+    mime: string;
+    size: number;
 };
 
 type CrfData = {
@@ -62,6 +70,7 @@ type CrfData = {
     created_at: string;
     it_remark: string | null;
     status_timeline?: StatusTimeline[];
+    attachments: Attachment[];
 };
 
 type Props = {
@@ -307,6 +316,7 @@ export default function ShowCrf({
                                 </div>
                             </form>
                         )}
+
                         {!can_update && crf.it_remark && (
                             <div className="space-y-2">
                                 <Label>IT Remark</Label>
@@ -389,6 +399,43 @@ export default function ShowCrf({
                                 </Table>
                             </div>
                         </div>
+
+                        <hr />
+
+                        {/* Inside your component render */}
+                        {crf.attachments && crf.attachments.length > 0 && (
+                            <div className="space-y-2">
+                                <Label className="text-gray-600">Attachments</Label>
+                                <div className="space-y-2">
+                                    {crf.attachments.map((attachment) => (
+                                        <div 
+                                            key={attachment.id} 
+                                            className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <FileIcon className="h-5 w-5 text-gray-500" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-gray-900">
+                                                        {attachment.name}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">
+                                                        {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <a
+                                                href={`/crf-attachments/${attachment.id}/download`}
+                                                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                                                download
+                                            >
+                                                <Download className="h-4 w-4" />
+                                                Download
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                     </CardContent>
                 </Card>
