@@ -124,16 +124,16 @@ export default function CrfForm({ user, departments, categories }: Props) {
         setFileErrors([]);
     }
 
-    function downloadFile(file: File) {
-        const url = URL.createObjectURL(file);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = file.name;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
+    // function downloadFile(file: File) {
+    //     const url = URL.createObjectURL(file);
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = file.name;
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    //     URL.revokeObjectURL(url);
+    // }
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
