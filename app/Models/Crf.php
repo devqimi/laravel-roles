@@ -27,7 +27,7 @@ class Crf extends Model
         'category_id',
         'issue',
         'reason',
-        'supporting_file',
+        // 'supporting_file',
         'user_id',
         'application_status_id',
         'approved_by',
@@ -83,6 +83,6 @@ class Crf extends Model
 
     public function attachments()
     {
-        return $this->hasMany(CrfAttachment::class);
+        return $this->hasMany(CrfAttachment::class, 'crf_id');
     }
 }
