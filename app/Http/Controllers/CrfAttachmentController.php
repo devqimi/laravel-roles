@@ -19,10 +19,10 @@ class CrfAttachmentController extends Controller
 
         // Check if user can access this CRF
         $canAccess = 
-        $crf->user_id === $user->id || // Creator
-        $crf->approved_by === $user->id || // Approver
-        $crf->assigned_to === $user->id ;// Assigned PIC
-        // $user->hasRole(['ITD ADMIN', 'HOU']); // Admins
+            $crf->user_id === $user->id || // Creator
+            $crf->approved_by === $user->id || // Approver
+            $crf->assigned_to === $user->id ;// Assigned PIC
+            // $user->hasRole(['ITD ADMIN', 'HOU']); // Admins
         
         if (!$canAccess) {
             abort(403, 'You do not have permission to download this file');
