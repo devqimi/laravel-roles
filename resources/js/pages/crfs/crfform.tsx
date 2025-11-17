@@ -1,6 +1,7 @@
 import { useForm } from '@inertiajs/react';
 import { router } from '@inertiajs/react';
 import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type Department = {
     id: number;
@@ -211,29 +212,25 @@ export default function CrfForm({ user, departments, categories }: Props) {
 
     return (
         <form className="space-y-3" onSubmit={handleSubmit}>
-            <div className="mx-auto mt-7 w-full max-w-lg rounded bg-white p-6 shadow-md">
-                <h1 className="mb-2 text-2xl text-gray-500">
-                    Customer Request Form
-                </h1>
-                <p className="mb-1 text-sm text-red-500">
+            <div className="grid grid-cols-2 gap-4">
+
+                <CardTitle>Customer Request Form</CardTitle>
+
+                <p className="mb-1 text-m text-red-500 col-span-2">
                     *1 CRF untuk 1 request sahaja. Sila isi CRF lain utk lebih
-                    dari 1 request.
-                </p>
-                <p className="mb-1 text-sm text-red-500">
+                    dari 1 request.<br />
                     *Setiap CRF akan diproses dalam masa 3 - 5 hari bekerja
-                    (Selepas acceptance oleh person incharge).
-                </p>
-                <p className="mb-4 text-sm text-red-500">
+                    (Selepas acceptance oleh person incharge).<br />
                     *CRF yang melibatkan setup/database akan melibatkan
                     perbincangan antara person incharge dengan pengguna serta
                     akan mengambil masa yang lebih panjang untuk diselesaikan.
                 </p>
+                
                 <div>
-
                     {/* name */}
-                    <label className="mb-1 block">Name</label>
+                    <label className="mb-1 block ">Name</label>
                     <input
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         type="text"
                         name="name"
                         required
@@ -246,7 +243,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     {/* nric */}
                     <label className="mb-1 block">NRIC</label>
                     <input
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         type="text"
                         name="nric"
                         required
@@ -260,7 +257,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     <label className="mb-1 block">Department</label>
                     <input
                         name="department_id"
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         required
                         value={
                             departments.find(
@@ -275,7 +272,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     {/* designation */}
                     <label className="mb-1 block">Designation</label>
                     <input
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         type="text"
                         name="designation"
                         value={formData.designation}
@@ -288,7 +285,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     {/* ext hp no */}
                     <label className="mb-1 block">Ext & HP No</label>
                     <input
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         type="text"
                         name="extno"
                         value={formData.extno}
@@ -302,7 +299,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                     <label className="mb-1 block">Category</label>
                     <select
                         name="category_id"
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         value={formData.category_id}
                         onChange={(e) => setFormData(prev => ({ ...prev, category_id: e.target.value }))}
                         required
@@ -322,7 +319,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                         Change / Functionality Required
                     </label>
                     <textarea
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         name="issue"
                         value={formData.issue}
                         onChange={(e) => setFormData(prev => ({ ...prev, issue: e.target.value }))}
@@ -336,20 +333,20 @@ export default function CrfForm({ user, departments, categories }: Props) {
                         Reason to request (Optional)
                     </label>
                     <textarea
-                        className="w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-900 px-2 py-1"
                         name="reason"
                         value={formData.reason}
                         onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
                     />
                 </div>
-                <div>
+                <div className="col-span-2">
 
                     {/* file upload */}
-                    <label className="mb-1 block">
+                    <label className="mb-1 block col-span-2">
                         Upload Document (JPG/GIF/PDF/DOC/DOCX/XLS/XLSX)
                     </label>
                     <input
-                        className="mb-2 w-full rounded border border-blue-900 px-2 py-1"
+                        className="w-full rounded border border-gray-300 px-2 py-1 text-gray-700 focus:ring-1 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-100"
                         type="file"
                         name="supporting_file"
                         accept=".pdf,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx"
@@ -378,14 +375,14 @@ export default function CrfForm({ user, departments, categories }: Props) {
 
                     {filePreviews.length > 0 && (
                         <div className="mt-4">
-                            <p className="mb-2 text-sm font-semibold text-gray-600">
+                            <p className="mb-3 text-sm font-semibold text-gray-600">
                                 Uploaded Files ({filePreviews.length}):
                             </p>
-                            <div className="space-y-3">
+                            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
                                 {filePreviews.map((item, index) => (
                                     <div
                                         key={index}
-                                        className="rounded border border-gray-300 bg-gray-50 p-3"
+                                        className="rounded-md border border-gray-300 bg-gray-50 p-4 shadow-sm"
                                     >
                                         <div className="mb-2 flex items-center justify-between">
                                             <span className="text-sm font-medium text-gray-700">
@@ -435,10 +432,10 @@ export default function CrfForm({ user, departments, categories }: Props) {
                         </div>
                     )}
                 </div>
-                <p className="mt-2 text-sm text-red-500">
+                <p className="mt-1 text-m text-red-500 col-span-2">
                     *Please print & sign before sending to IT Department.
                 </p>
-                <div className="mt-2 flex justify-center space-x-4">
+                <div className="mt-2 flex justify-center space-x-4 col-span-2">
                     <button
                         className="rounded bg-blue-900 px-4 py-2 text-white disabled:opacity-50"
                         type="submit"
@@ -447,7 +444,7 @@ export default function CrfForm({ user, departments, categories }: Props) {
                         {processing ? 'Submitting...' : 'Submit and Print'}
                     </button>
                     <button
-                        className="rounded bg-blue-900 px-4 py-2 text-white"
+                        className="rounded bg-blue-500 px-4 py-2 text-white"
                         type="button"
                         onClick={handleReset}
                     >
