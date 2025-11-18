@@ -2,7 +2,6 @@ import TablePagination from '@/components/table-pagination';
 import { Button } from '@/components/ui/button';
 import {Card, CardAction, CardContent, CardHeader, CardTitle,} from '@/components/ui/card';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
-import { usePermission } from '@/hooks/user-permissions';
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
@@ -30,9 +29,31 @@ type Factor = {
     name: string;
 };
 
+type CrfData = {
+    id: number;
+    fname: string;
+    nric: string;
+    designation: string;
+    extno: string;
+    issue: string;
+    reason: string;
+    department: { dname: string };
+    category: { cname: string };
+    factor?: { id: number; name: string } | null;
+    application_status: { status: string };
+    application_status_id: number;
+    assigned_to: number | null;
+    assigned_user?: { name: string } | null;
+    approver?: { name: string } | null;
+    created_at: string;
+    updated_at: string;
+};
+
 type Props = {
     crfs: Crf;
+    department_crfs: CrfData[] | null;
     can_view?: boolean;
+    can_view_department?: boolean;
     can_delete?: boolean;
     can_create?: boolean;
     can_approve?: boolean;
@@ -47,7 +68,9 @@ type Props = {
 
 export default function Dashboard({
     crfs,
+    department_crfs = null,
     can_view = false,
+    can_view_department = false,
     can_delete = false,
     can_create = false,
     can_approve = false,
@@ -158,8 +181,13 @@ export default function Dashboard({
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 <Card>
                     <CardHeader className="flex items-center justify-between">
-                        <CardTitle>CRF</CardTitle>
+                        {can_approve ? (
+                            <CardTitle>CRF Pending Approval</CardTitle>
+                        ) : (
+                            <CardTitle>CRF</CardTitle>
+                        )}
                         <CardAction>
+                            
                             {can_create && (
                                 <Link href={'crfs/create'}>
                                     <Button variant={'default'}>
@@ -167,11 +195,7 @@ export default function Dashboard({
                                     </Button>
                                 </Link>
                             )}
-                            {/* <Link href={"/crfs/check-status"}>
-                                <Button variant="outline">
-                                    Check CRF Status
-                                </Button>
-                            </Link> */}
+
                         </CardAction>
                     </CardHeader>
                     <hr />
@@ -222,11 +246,13 @@ export default function Dashboard({
                                         <TableHead className="font-bold text-white">
                                             Updated At
                                         </TableHead>
+
                                         {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor) && (
                                             <TableHead className="font-bold text-white">
                                                 Actions
                                             </TableHead>
                                         )}
+                                        
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -279,6 +305,237 @@ export default function Dashboard({
 
                                                         {/* FOR ADMIN TO REASSIGN PIC */}
                                                         {(can_assign_itd || can_assign_vendor) && (
+                                                            <Link href={`/crfs/${crf.id}`}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    title="View CRF"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+
+                                                        {/* FOR HOU VIEW FULL DETAIL*/}
+                                                        {can_approve && crf.application_status_id === 1 && (
+                                                            <Link href={`/crfs/${crf.id}`}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    title="View CRF"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+
+                                                        {/* to approve for HOU*/}
+                                                        {can_approve && crf.application_status_id === 1 && (
+                                                                <>
+                                                                    <Button
+                                                                        variant="default"
+                                                                        size="sm"
+                                                                        onClick={() => handleApprove(crf.id,)}
+                                                                        disabled={approvingId === crf.id}
+                                                                        className="bg-green-600 hover:bg-green-700"
+                                                                        title="Approve"
+                                                                    >
+                                                                        <CheckCircle className="h-4 w-4" />
+                                                                    </Button>
+                                                                </>    
+                                                        )}
+
+                                                        {/* to acknowledge */}
+                                                        {can_acknowledge && crf.application_status_id === 2 && (
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                onClick={() => handleAcknowledge(crf.id)}
+                                                                disabled={acknowledgingId === crf.id}
+                                                                className="bg-blue-600 hover:bg-blue-700"
+                                                                title="Acknowledge"
+                                                            >
+                                                                <ClipboardCheck className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+                                                        
+                                                        {/* to assign PIC */}
+                                                        {(can_assign_itd || can_assign_vendor) && crf.application_status_id === 3 && (
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                onClick={() => handleOpenAssignModal(crf.id)}
+                                                                className="bg-purple-600 hover:bg-purple-700"
+                                                                title="Assign"
+                                                            >
+                                                                <UserPlus className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+
+                                                        {/* to DELETE
+                                                        {can_delete && (
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => handleDelete(crf.id)}
+                                                                disabled={deletingId === crf.id}
+                                                                title="Delete"
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        )} */}
+                                                        
+                                                    </div>
+                                                </TableCell>
+                                            )}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </CardContent>
+
+                    {crfs.data.length > 0 ? (
+                        <TablePagination
+                            total={crfs.total}
+                            from={crfs.from}
+                            to={crfs.to}
+                            links={crfs.links}
+                        />
+                    ) : (
+                        <div className="flex h-full items-center justify-center">
+                            No Results Found!
+                        </div>
+                    )}
+
+                </Card>
+                
+                {/* FOR HOU DASHBOARD VIEW */}
+                {(can_approve && can_view_department && department_crfs && department_crfs.length > 0) && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>CRF Progress/Closed</CardTitle>
+                        </CardHeader>
+                        <hr />
+                        <CardContent>
+                        <div className="rounded-md border overflow-hidden">
+                            <Table>
+                                <TableHeader className="bg-slate-500">
+                                    <TableRow>
+                                        <TableHead className="font-bold text-white">
+                                            No.
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Name
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            NRIC
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Department
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Designation
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Ext & HP No
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Category
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Factor
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Issue
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Reason
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Status
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Approved By
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Created At
+                                        </TableHead>
+                                        <TableHead className="font-bold text-white">
+                                            Updated At
+                                        </TableHead>
+
+                                        {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor) && (
+                                            <TableHead className="font-bold text-white">
+                                                Actions
+                                            </TableHead>
+                                        )}
+                                        
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {department_crfs.map((crf, index) => (
+                                        <TableRow key={crf.id} className="odd:bg-slate-100 dark:odd:bg-slate-800">
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{crf.fname}</TableCell>
+                                            <TableCell>{crf.nric}</TableCell>
+                                            <TableCell>{crf.department?.dname || 'N/A'}</TableCell>
+                                            <TableCell>{crf.designation}</TableCell>
+                                            <TableCell>{crf.extno}</TableCell>
+                                            <TableCell>{crf.category?.cname || 'N/A'}</TableCell>
+                                            <TableCell>{crf.factor ? crf.factor.name : 'N/A'}
+                                            </TableCell>
+                                            <TableCell className="max-w-xs">
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <p className="truncate cursor-help">
+                                                                {crf.issue}
+                                                            </p>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent className="max-w-sm">
+                                                            <p className="text-sm whitespace-pre-wrap">{crf.issue}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            </TableCell>
+                                            <TableCell>{crf.reason || '-'}</TableCell>
+                                            <TableCell>{getStatusBadge(crf.application_status?.status)}</TableCell>
+                                            <TableCell>{crf.approver?.name || '-'}</TableCell>
+                                            <TableCell>{new Date(crf.created_at,).toLocaleString()}</TableCell>
+                                            <TableCell>{new Date(crf.updated_at,).toLocaleString()}</TableCell>
+                                            {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor || can_update_own_crf) && (
+                                                <TableCell>
+                                                    <div className="flex gap-2">
+
+                                                        {/* to update for PIC */}
+                                                        {(can_view || (can_update_own_crf && crf.assigned_to)) && (
+                                                            <Link href={`/crfs/${crf.id}`}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    title="View CRF"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+
+                                                        {/* FOR ADMIN TO REASSIGN PIC */}
+                                                        {(can_assign_itd || can_assign_vendor) && (
+                                                            <Link href={`/crfs/${crf.id}`}>
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    title="View CRF"
+                                                                >
+                                                                    <Eye className="h-4 w-4" />
+                                                                </Button>
+                                                            </Link>
+                                                        )}
+
+                                                        {/* FOR HOU VIEW FULL DETAIL*/}
+                                                        {can_approve && crf.application_status_id === 1 && (
                                                             <Link href={`/crfs/${crf.id}`}>
                                                                 <Button
                                                                     variant="outline"
@@ -367,7 +624,8 @@ export default function Dashboard({
                             No Results Found!
                         </div>
                     )}
-                </Card>
+                    </Card>    
+                )}
 
                 {/* Assignment Modal */}
                 {selectedCrfId && (
