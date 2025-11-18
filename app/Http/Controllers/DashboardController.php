@@ -7,7 +7,7 @@ use App\Models\User;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log; // ✅ Add this line
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -15,12 +15,13 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        
         // if user can view all CRFs
         if (Gate::allows('View ALL CRF')) {
             $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->latest()
             ->paginate(10);
+
+            $departmentCrfs = null;
         }
         
         // ITD ADMIN can view both "assigned to ITD" and "assigned to Vendor" CRFs
@@ -29,43 +30,48 @@ class DashboardController extends Controller
             ->where('application_status_id', '>=', 2)
             ->latest()
             ->paginate(10);
+
+            $departmentCrfs = null;
         }
+
         // HOU can verify CRFs from their department
-        elseif (Gate::allows('verified CRF')) {
-            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver' , 'assigned_user'])
-            ->where('department_id', $user->department_id)
-            ->where('application_status_id', 1)
-            ->latest()
-            ->paginate(10);
+        elseif (Gate::allows('verified CRF') && Gate::allows('View Department CRF')) {
+
+                $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver' , 'assigned_user'])
+                ->where('department_id', $user->department_id)
+                ->where('application_status_id', 1)
+                ->latest()
+                ->paginate(10);
+                
+                $departmentCrfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
+                ->where('department_id', $user->department_id)
+                ->whereIn('application_status_id', [2, 3, 4, 5, 6, 7, 8, 9])
+                ->orderBy('created_at', 'desc')
+                ->latest()
+                ->get();
         }
-        
         
         // ITD PIC can only view ITD CRFs assigned
         elseif (Gate::allows('View ITD CRF')) {
             $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
-            ->where('assigned_to', $user->id) // ✅ Only CRFs assigned to this user
+            ->where('assigned_to', $user->id) // Only CRFs assigned to this user
             ->whereIn('application_status_id', [4, 6, 8, 9]) // Assigned to ITD, Reassigned to ITD, Work in progress, Closed
             ->latest()
             ->paginate(10);
+
+            $departmentCrfs = null;
         }
         
         // if user can view Vendor CRFs
         elseif (Gate::allows('View Vendor CRF')) {
             $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
-            ->where('assigned_to', $user->id) // ✅ Only CRFs assigned to this user
+            ->where('assigned_to', $user->id) // Only CRFs assigned to this user
             ->whereIn('application_status_id', [5, 7, 8, 9]) // Assigned to Vendor, Reassigned to Vendor, Work in progress, Closed
             ->latest()
             ->paginate(10);
+
+            $departmentCrfs = null;
         }
-        
-        
-        // for HOU to view their department's CRFs
-        elseif (Gate::allows('View Department CRF')) {
-            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
-            ->where('department_id', $user->department_id) // ✅ match by ID
-            ->latest()
-            ->paginate(10);
-        } 
         
         // user can only view their own CRFs
         elseif (Gate::allows('View Personal CRF')) {
@@ -73,7 +79,10 @@ class DashboardController extends Controller
             ->where('user_id', $user->id)
             ->latest()
             ->paginate(10);
+
+            $departmentCrfs = null;
         }
+
         // No permission at all
         else {
             abort(403, 'Unauthorized to view CRFs');
@@ -84,7 +93,9 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'crfs' => $crfs,
+            'department_crfs' => $departmentCrfs,
             'can_view' =>Gate::allows('View Personal CRF'),
+            'can_view_department' => Gate::allows('View Department CRF'),
             'can_delete' =>Gate::allows('Close Assigned CRF'),
             'can_create' => Gate::allows('Create CRF'),
             'can_approve' => Gate::allows('verified CRF'),
