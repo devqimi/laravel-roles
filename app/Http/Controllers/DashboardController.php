@@ -18,21 +18,21 @@ class DashboardController extends Controller
         
         // if user can view all CRFs
         if (Gate::allows('View ALL CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver', 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->latest()
             ->paginate(10);
         }
         
         // ITD ADMIN can view both "assigned to ITD" and "assigned to Vendor" CRFs
         elseif (Gate::allows('View ITD CRF') && Gate::allows('View Vendor CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver', 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->where('application_status_id', '>=', 2)
             ->latest()
             ->paginate(10);
         }
         // HOU can verify CRFs from their department
         elseif (Gate::allows('verified CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver' , 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver' , 'assigned_user'])
             ->where('department_id', $user->department_id)
             ->where('application_status_id', 1)
             ->latest()
@@ -42,7 +42,7 @@ class DashboardController extends Controller
         
         // ITD PIC can only view ITD CRFs assigned
         elseif (Gate::allows('View ITD CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver', 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->where('assigned_to', $user->id) // ✅ Only CRFs assigned to this user
             ->whereIn('application_status_id', [4, 6, 8, 9]) // Assigned to ITD, Reassigned to ITD, Work in progress, Closed
             ->latest()
@@ -51,7 +51,7 @@ class DashboardController extends Controller
         
         // if user can view Vendor CRFs
         elseif (Gate::allows('View Vendor CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver', 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->where('assigned_to', $user->id) // ✅ Only CRFs assigned to this user
             ->whereIn('application_status_id', [5, 7, 8, 9]) // Assigned to Vendor, Reassigned to Vendor, Work in progress, Closed
             ->latest()
@@ -61,7 +61,7 @@ class DashboardController extends Controller
         
         // for HOU to view their department's CRFs
         elseif (Gate::allows('View Department CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver', 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->where('department_id', $user->department_id) // ✅ match by ID
             ->latest()
             ->paginate(10);
@@ -69,7 +69,7 @@ class DashboardController extends Controller
         
         // user can only view their own CRFs
         elseif (Gate::allows('View Personal CRF')) {
-            $crfs = Crf::with(['department', 'category', 'user', 'application_status', 'approver', 'assigned_user'])
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
             ->where('user_id', $user->id)
             ->latest()
             ->paginate(10);

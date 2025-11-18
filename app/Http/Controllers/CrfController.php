@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Crf;
 use App\Models\User;
 use Inertia\Inertia;
+use App\Models\Factor;
 use App\Notifications;
 use App\Models\Category;
 use App\Models\Department;
@@ -72,7 +73,8 @@ class CrfController extends Controller
                 'designation' => 'required|string|max:255',
                 'extno' => 'required|string|max:10',
                 'category_id' => 'required|exists:categories,id',
-                'issue' => 'required|string',
+                'factor_id' => 'nullable|exists:factors,id',
+                'issue' => 'required|string|max:255',
                 'reason' => 'nullable|string',
                 'supporting_file' => 'nullable|array',
                 'supporting_file.*' => 'file|mimes:jpg,jpeg,gif,pdf,doc,docx,xls,xlsx|max:5120',
@@ -378,6 +380,7 @@ class CrfController extends Controller
         $crf->load([
             'department',
             'category',
+            'factor',
             'application_status',
             'approver',
             'assigned_user',
@@ -410,6 +413,9 @@ class CrfController extends Controller
         // Get ITD and Vendor PICs for reassignment
         $itdPics = User::role('ITD PIC')->select('id', 'name')->get();
         $vendorPics = User::role('VENDOR PIC')->select('id', 'name')->get();
+
+        // Get all factors for dropdown
+        $factors = Factor::all(['id', 'name']);
         
         return Inertia::render('crfs/show', [
             'crf' => array_merge($crf->toArray(), [
@@ -421,6 +427,7 @@ class CrfController extends Controller
             'can_reassign_vendor' => Gate::allows('Re Assign PIC Vendor'),
             'itd_pics' => $itdPics,
             'vendor_pics' => $vendorPics,
+            'factors' => $factors,
         ]);
     }
 
@@ -459,6 +466,34 @@ class CrfController extends Controller
         }
 
         return redirect()->back()->with('success', 'Remark updated successfully');
+    }
+
+    public function updateFactor(Request $request, Crf $crf)
+    {
+
+        //check if user is PIC assigned to
+        if ($crf->assigned_to !== Auth::id()){
+            abort(403, 'Only assigned PIC can update factor');
+        }
+
+        $validated = $request->validate([
+            'factor_id' => 'required|exists:factors,id',
+        ]);
+
+        $factor = Factor::find($validated['factor_id']);
+
+        $crf->update([
+            'factor_id' => $validated['factor_id'],
+        ]);
+        
+        $crf->addTimelineEntry(
+            status: $crf->application_status->status,
+            actionType: 'factor_updated',
+            remark: 'Factor set to: ' . $factor->name,
+            userId: Auth::id()
+        );
+
+        return redirect()->back()->with('success', 'Factor updated successfully');
     }
 
     public function markInProgress(Crf $crf)

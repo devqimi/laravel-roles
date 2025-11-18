@@ -25,6 +25,7 @@ class Crf extends Model
         'designation',
         'extno',
         'category_id',
+        'factor_id',
         'issue',
         'reason',
         // 'supporting_file',
@@ -49,6 +50,11 @@ class Crf extends Model
 
     public function category(){
         return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function factor()
+    {
+        return $this->belongsTo(Factor::class, 'factor_id');
     }
 
     public function application_status(){
