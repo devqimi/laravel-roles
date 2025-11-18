@@ -184,6 +184,7 @@ export default function AssignCrfModal({
                     </Button>
                     <Button
                         type="button"
+                        className="bg-purple-600 hover:bg-purple-700"
                         onClick={handleSubmit}
                         disabled={!assignType || !selectedUser || isSubmitting}
                     >
