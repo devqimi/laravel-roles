@@ -535,7 +535,7 @@ export default function Dashboard({
                                                             )}
 
                                                             {/* FOR HOU VIEW FULL DETAIL*/}
-                                                            {can_approve && crf.application_status_id === 1 && (
+                                                            {can_approve && (
                                                                 <Link href={`/crfs/${crf.id}`}>
                                                                     <Button
                                                                         variant="outline"
