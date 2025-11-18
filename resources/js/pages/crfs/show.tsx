@@ -30,6 +30,7 @@ import { Textarea } from '@headlessui/react';
 import { Head, router, useForm } from '@inertiajs/react';
 import { UserCog, FileIcon, Download } from 'lucide-react';
 import { useState } from 'react';
+import AssignCrfModal from '@/pages/crfs/AssignCrfModal';
 
 type User = {
     id: number;
@@ -82,6 +83,10 @@ type CrfData = {
 
 type Props = {
     crf: CrfData;
+    can_approve: boolean,
+    can_acknowledge: boolean,
+    can_assign_itd: boolean,
+    can_assign_vendor: boolean,
     can_update: boolean;
     can_reassign_itd?: boolean;
     can_reassign_vendor?: boolean;
@@ -97,7 +102,11 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function ShowCrf({ 
     crf, 
-    can_update, 
+    can_approve,
+    can_acknowledge,
+    can_assign_itd,
+    can_assign_vendor,
+    can_update,
     can_reassign_itd = false,
     can_reassign_vendor = false,
     itd_pics = [],
@@ -109,6 +118,8 @@ export default function ShowCrf({
     const [reassignType, setReassignType] = useState<'itd' | 'vendor' | ''>('');
     const [selectedUser, setSelectedUser] = useState<string>('');
     const [isReassigning, setIsReassigning] = useState(false);
+    const [assignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedCrfId, setSelectedCrfId] = useState<number | null>(null);
 
     const { data, setData, put, processing, errors } = useForm({
         it_remark: crf.it_remark || '',
@@ -122,6 +133,32 @@ export default function ShowCrf({
                 setIsEditing(false);
             },
         });
+    };
+
+    const handleApprove = () => {
+        if (confirm('Approve this CRF?')) {
+            router.post(`/crfs/${crf.id}/approve`, {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleAcknowledge = () => {
+        if (confirm('Acknowledge this CRF?')) {
+            router.post(`/crfs/${crf.id}/acknowledge`, {}, {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleOpenAssignModal = (crfId: number) => {
+        setSelectedCrfId(crfId);
+        setAssignModalOpen(true);
+    };
+
+    const handleCloseAssignModal = () => {
+        setAssignModalOpen(false);
+        setSelectedCrfId(null);
     };
 
     const handleMarkInProgress = () => {
@@ -209,6 +246,44 @@ export default function ShowCrf({
                                     Reassign
                                 </Button>
                             )}
+
+                            {/* FOR HOU TO APPROVE */}
+                            {can_approve && (
+                                <>
+                                    {crf.application_status.status === 'First Created' && (
+                                        <Button onClick={handleApprove}
+                                            className="bg-green-600 hover:bg-green-700">
+                                            Approve
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+
+                            {/* FOR ADMIN TO ACKNOWLEDGE */}
+                            {can_acknowledge && (
+                                <>
+                                    {(crf.application_status.status === 'Verified') && (
+                                        <Button onClick={handleAcknowledge}
+                                            className="bg-blue-600 hover:bg-blue-700">
+                                            Acknowledge
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+
+                            {/* FOR ADMIN TO ASSIGN PIC */}
+                            {(can_assign_itd || can_assign_vendor) && (
+                                <>
+                                    {(crf.application_status.status === 'ITD Acknowledged') && (
+                                        <Button onClick={() => handleOpenAssignModal(crf.id)}
+                                            className="bg-purple-600 hover:bg-purple-700">
+                                            Assign PIC
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+
+                            {/* FOR PIC TO UPDATE */}
                             {can_update && (
                                 <>
                                     {(crf.application_status.status === 'Assigned to ITD' || crf.application_status.status === 'Assigned to Vendor' || crf.application_status.status === 'Reassigned to ITD' || crf.application_status.status === 'Reassigned to Vendor') && (
@@ -223,6 +298,7 @@ export default function ShowCrf({
                                     )}
                                 </>
                             )}
+
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-6">
@@ -598,6 +674,20 @@ export default function ShowCrf({
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
+
+                {/* Assignment Modal */}
+                {selectedCrfId && (
+                    <AssignCrfModal
+                        crfId={selectedCrfId}
+                        isOpen={assignModalOpen}
+                        onClose={handleCloseAssignModal}
+                        itdPics={itd_pics}
+                        vendorPics={vendor_pics}
+                        canAssignItd={can_assign_itd}
+                        canAssignVendor={can_assign_vendor}
+                    />
+                )}
+
             </div>
         </AppLayout>
     );
