@@ -36,6 +36,11 @@ type User = {
     name: string;
 };
 
+type Factor = {
+    id: number;
+    name: string;
+}
+
 type StatusTimeline = {
     id: number;
     status: string;
@@ -60,6 +65,8 @@ type CrfData = {
     designation: string;
     extno: string;
     category: { cname: string };
+    factor?: { id: number; name: string } | null;
+    factor_id?: number | null;
     issue: string;
     reason: string;
     application_status: { status: string };
@@ -80,6 +87,7 @@ type Props = {
     can_reassign_vendor?: boolean;
     itd_pics?: User[];
     vendor_pics?: User[];
+    factors: Factor[];
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -93,7 +101,8 @@ export default function ShowCrf({
     can_reassign_itd = false,
     can_reassign_vendor = false,
     itd_pics = [],
-    vendor_pics = []
+    vendor_pics = [],
+    factors = [],
 }: Props) {
     const [isEditing, setIsEditing] = useState(false);
     const [reassignModalOpen, setReassignModalOpen] = useState(false);
@@ -244,6 +253,48 @@ export default function ShowCrf({
                                 <Label className="text-gray-600">Category</Label>
                                 <p className="font-medium">{crf.category.cname}</p>
                             </div>
+
+                            {/* FACTOR DROPDOWN */}
+                            <div>
+                                <Label className="text-gray-600">Factor</Label>
+                                {can_update ? (
+                                    <select
+                                        name="factor_id"
+                                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm"
+                                        value={crf.factor_id || ''}
+                                        onChange={(e) => {
+                                            const newFactorId = e.target.value;
+                                            if (confirm('Update factor for this CRF?')) {
+                                                router.put(
+                                                    `/crfs/${crf.id}/update-factor`,
+                                                    { factor_id: newFactorId },
+                                                    {
+                                                        preserveScroll: true,
+                                                        onSuccess: () => {
+                                                            console.log('Factor updated');
+                                                        },
+                                                        onError: () => {
+                                                            alert('Failed to update factor');
+                                                        },
+                                                    }
+                                                );
+                                            }
+                                        }}
+                                        
+                                    >
+                                        <option value="">Select Factor</option>
+                                        {factors.map((factor) => (
+                                            <option key={factor.id} value={factor.id}>
+                                                {factor.name}
+                                            </option>
+                                        ))}
+
+                                    </select>
+                                ) : (
+                                    <p className="font-medium">{crf.factor ? crf.factor.name : '-'}</p>
+                                )}
+                            </div>
+
                             <div className="col-span-2">
                                 <Label className="text-gray-600">Issue</Label>
                                 <p className="font-medium">{crf.issue}</p>

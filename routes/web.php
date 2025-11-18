@@ -87,6 +87,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('crfs/{crf}/reassign-to-itd', [CrfController::class, 'reassignToItd'])->name('crfs.reassignToItd')->can('Re Assign PIC ITD');
     Route::post('crfs/{crf}/reassign-to-vendor', [CrfController::class, 'reassignToVendor'])->name('crfs.reassignToVendor')->can('Re Assign PIC Vendor');
 
+    //update factor by PIC
+    Route::put('/crfs/{crf}/update-factor', [CrfController::class, 'updateFactor'])->name('crfs.update-factor');
+
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');

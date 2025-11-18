@@ -17,6 +17,11 @@ type Category = {
     cname: string;
 };
 
+type Factor = {
+    id: number;
+    name: string;
+}
+
 type User = {
     id: number;
     name: string;
@@ -34,9 +39,11 @@ export interface SingleCrf {
     reason: string;
     department_id: number;
     category_id: number;
+    factor_id: number;
     user_id: number;
     department?: Department;
     category?: Category;
+    factor?: Factor;
     user?: User;
     application_status_id: number;
     application_status?: ApplicationStatus;
