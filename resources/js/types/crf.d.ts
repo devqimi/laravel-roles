@@ -6,7 +6,6 @@ type ApplicationStatus = {
     status: string;
 };
 
-// ✅ Define Department and Category types
 type Department = {
     id: number;
     dname: string;
