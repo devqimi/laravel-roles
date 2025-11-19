@@ -32,6 +32,7 @@ class Crf extends Model
         'user_id',
         'application_status_id',
         'approved_by',
+        'tp_approved_by',
         'assigned_to',
         'it_remark',
     ];
@@ -42,6 +43,11 @@ class Crf extends Model
     
     public function approver(){
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function tp_approver()
+    {
+        return $this->belongsTo(User::class, 'tp_approved_by');
     }
 
     public function department(){

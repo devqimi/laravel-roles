@@ -34,6 +34,17 @@ class DashboardController extends Controller
             $departmentCrfs = null;
         }
 
+        // TP approve
+        elseif (Gate::allows('approved by TP')) {
+            // TP can view CRFs that need their approval (status 10)
+            $crfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
+                ->where('application_status_id', 10) // Verified by HOU, awaiting TP
+                ->latest()
+                ->paginate(10);
+            
+            $departmentCrfs = null;
+        }
+
         // HOU can verify CRFs from their department
         elseif (Gate::allows('verified CRF') && Gate::allows('View Department CRF')) {
 
@@ -45,7 +56,7 @@ class DashboardController extends Controller
                 
                 $departmentCrfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
                 ->where('department_id', $user->department_id)
-                ->whereIn('application_status_id', [2, 3, 4, 5, 6, 7, 8, 9])
+                ->whereIn('application_status_id', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
                 ->orderBy('created_at', 'desc')
                 ->latest()
                 ->get();
@@ -105,6 +116,7 @@ class DashboardController extends Controller
             'can_update_own_crf' => Gate::allows('Update CRF (own CRF)'),
             'itd_pics' => $itdPics,
             'vendor_pics' => $vendorPics,
+            'can_approve_tp' => Gate::allows('approved by TP'),
         ]);
     }
 }

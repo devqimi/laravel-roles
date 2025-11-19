@@ -7,7 +7,7 @@ import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { Crf } from '@/types/crf';
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle, Trash2, ClipboardCheck, UserPlus, Eye } from 'lucide-react';
+import { CheckCircle, ClipboardCheck, UserPlus, Eye } from 'lucide-react';
 import AssignCrfModal from '@/pages/crfs/AssignCrfModal';
 import { useState } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -57,6 +57,7 @@ type Props = {
     can_delete?: boolean;
     can_create?: boolean;
     can_approve?: boolean;
+    can_approve_tp?: boolean;
     can_acknowledge?: boolean;
     can_assign_itd?: boolean;
     can_assign_vendor?: boolean;
@@ -74,6 +75,7 @@ export default function Dashboard({
     can_delete = false,
     can_create = false,
     can_approve = false,
+    can_approve_tp = false,
     can_acknowledge = false,
     can_assign_itd = false,
     can_assign_vendor = false,
@@ -158,7 +160,7 @@ export default function Dashboard({
 
         const statusColors: Record<string, string> = {
             'First Created': 'bg-amber-100 text-amber-800',
-            'Verified': 'bg-green-100 text-green-800',
+            'Approved': 'bg-green-100 text-green-800',
             'ITD Acknowledged': 'bg-indigo-100 text-indigo-800',
             'Assigned to ITD': 'bg-blue-100 text-blue-800',
             'Assigned to Vendor': 'bg-cyan-100 text-cyan-800',
@@ -166,6 +168,8 @@ export default function Dashboard({
             'Reassigned to Vendor': 'bg-cyan-200 text-cyan-900',
             'Work in progress': 'bg-sky-100 text-sky-800',
             'Closed': 'bg-gray-200 text-gray-800',
+            'Approved by HOU': 'bg-green-200 text-green-800',
+            'Approved by TP': 'bg-green-200 text-green-800',
         };
 
         return (
@@ -286,7 +290,7 @@ export default function Dashboard({
                                             <TableCell>{crf.approver?.name || '-'}</TableCell>
                                             <TableCell>{new Date(crf.created_at,).toLocaleString()}</TableCell>
                                             <TableCell>{new Date(crf.updated_at,).toLocaleString()}</TableCell>
-                                            {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor || can_update_own_crf) && (
+                                            {(can_view || can_delete || can_approve || can_acknowledge || can_assign_itd || can_assign_vendor || can_update_own_crf || can_approve_tp) && (
                                                 <TableCell>
                                                     <div className="flex gap-2">
 
@@ -345,8 +349,25 @@ export default function Dashboard({
                                                                 </>    
                                                         )}
 
-                                                        {/* to acknowledge */}
-                                                        {can_acknowledge && crf.application_status_id === 2 && (
+                                                        {/* FOR TP TO APPROVE AFTER HOU (Hardwarw Relocation) */}
+                                                        {can_approve_tp && crf.application_status_id === 10 && (
+                                                            <Button
+                                                                variant="default"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    if (confirm('Approve this Hardware Relocation CRF?')) {
+                                                                        router.post(`/crfs/${crf.id}/approve-by-tp`);
+                                                                    }
+                                                                }}
+                                                                className="bg-green-600 hover:bg-green-700"
+                                                                title="TP Approve"
+                                                            >
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        )}
+
+                                                        {/* for itd admin to acknowledge */}
+                                                        {(can_acknowledge && (crf.application_status_id === 2 || crf.application_status_id === 10 || crf.application_status_id === 11)) && (
                                                             <Button
                                                                 variant="default"
                                                                 size="sm"

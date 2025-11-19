@@ -73,6 +73,7 @@ type CrfData = {
     application_status: { status: string };
     application_status_id: number;
     approver: { name: string } | null;
+    tp_approver: { name: string } | null;
     assigned_user: { name: string } | null;
     assigned_to: number | null;
     created_at: string;
@@ -84,6 +85,7 @@ type CrfData = {
 type Props = {
     crf: CrfData;
     can_approve: boolean,
+    can_approve_tp: boolean,
     can_acknowledge: boolean,
     can_assign_itd: boolean,
     can_assign_vendor: boolean,
@@ -103,6 +105,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function ShowCrf({ 
     crf, 
     can_approve,
+    can_approve_tp,
     can_acknowledge,
     can_assign_itd,
     can_assign_vendor,
@@ -259,10 +262,25 @@ export default function ShowCrf({
                                 </>
                             )}
 
+                            {/* FOR TP TO APPROVE */}
+                            {can_approve_tp && crf.application_status_id == 10 && (
+                                <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                        if (confirm('Approve this Hardware Relocation CRF?')) {
+                                            router.post(`/crfs/${crf.id}/approve-by-tp`);
+                                        }
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700">
+                                    TP Approve
+                                </Button>
+                            )}
+
                             {/* FOR ADMIN TO ACKNOWLEDGE */}
                             {can_acknowledge && (
                                 <>
-                                    {(crf.application_status.status === 'Verified') && (
+                                    {(crf.application_status.status === 'Approved' || crf.application_status.status === 'Approved by HOU' || crf.application_status.status === 'Approved by TP'  ) && (
                                         <Button onClick={handleAcknowledge}
                                             className="bg-blue-600 hover:bg-blue-700">
                                             Acknowledge
@@ -384,8 +402,12 @@ export default function ShowCrf({
                                 <p className="font-medium">{crf.application_status.status}</p>
                             </div>
                             <div>
-                                <Label className="text-gray-600">Approved By</Label>
+                                <Label className="text-gray-600">Approved By HOU</Label>
                                 <p className="font-medium">{crf.approver?.name || '-'}</p>
+                            </div>
+                            <div>
+                                <Label className="text-gray-600">Approved By TP</Label>
+                                <p className="font-medium">{crf.tp_approver?.name || '-'}</p>
                             </div>
                             <div>
                                 <Label className="text-gray-600">Assigned To</Label>

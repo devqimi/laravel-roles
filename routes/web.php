@@ -87,6 +87,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('crfs/{crf}/reassign-to-itd', [CrfController::class, 'reassignToItd'])->name('crfs.reassignToItd')->can('Re Assign PIC ITD');
     Route::post('crfs/{crf}/reassign-to-vendor', [CrfController::class, 'reassignToVendor'])->name('crfs.reassignToVendor')->can('Re Assign PIC Vendor');
 
+    // approve by TP
+    Route::post('/crfs/{crf}/approve-by-tp', [CrfController::class, 'approveByTP'])->name('crfs.approve-by-tp');
+
     //update factor by PIC
     Route::put('/crfs/{crf}/update-factor', [CrfController::class, 'updateFactor'])->name('crfs.update-factor');
 

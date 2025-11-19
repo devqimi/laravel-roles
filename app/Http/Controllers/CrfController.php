@@ -15,6 +15,7 @@ use App\Models\ApplicationStatus;
 use App\Notifications\CrfCreated;
 use App\Notifications\CrfAssigned;
 use App\Notifications\CrfVerified;
+use App\Notifications\CrfVerifiedByHOU;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -178,33 +179,63 @@ class CrfController extends Controller
             return redirect()->route('dashboard')->with('error', 'CRF has already been processed');
         }
 
-        // Update to "Approved by HOU" (id: 2)
-        $crf->update([
-            'application_status_id' => 2,
-            'approved_by' => $user->id,
-        ]);
+        // Check if this is Hardware Relocation category
+        $isHardwareRelocation = $crf->category->cname === 'Hardware Relocation';
 
-        // Add timeline entry
-        $crf->addTimelineEntry(
-            status: 'Verified',
-            actionType: 'status_change',
-            remark: 'Approved by ' . $user->name,
-            userId: $user->id
-        );
+        if ($isHardwareRelocation) {
 
-        //Notify ITD Admin
-        $itdAdmins = $this->getITDAdmins();
-        foreach ($itdAdmins as $admin) {
-            $admin->notify(new CrfVerified($crf));
-    }
+            // For Hardware Relocation: Set status to "Verified by HOU" (requires TP approval)
+            $crf->update([
+                'application_status_id' => 10, // Verified by HOU
+                'approved_by' => $user->id,
+            ]);
 
-        return redirect()->route('dashboard')->with('success', 'CRF approved successfully!');
+            // Add timeline entry
+            $crf->addTimelineEntry(
+                status: 'Approved by HOU',
+                actionType: 'status_change',
+                remark: 'Approved by HOU: ' . $user->name . ' (Awaiting TP approval)',
+                userId: $user->id
+            );
+
+            // Notify Timbalan Pengarah
+            $tpUsers = $this->getTPs();
+            foreach ($tpUsers as $tp) {
+                $tp->notify(new CrfVerifiedByHOU($crf));
+            }
+
+            return redirect()->route('dashboard')->with('success', 'CRF approved. Notification sent to Timbalan Pengarah for final approval.');
+        
+        } else {
+
+            // For other categories: Normal flow - Status "Verified" (go directly to ITD Admin)
+            $crf->update([
+                'application_status_id' => 2, // Verified
+                'approved_by' => $user->id,
+            ]);
+
+            // Add timeline entry
+            $crf->addTimelineEntry(
+                status: 'Verified',
+                actionType: 'status_change',
+                remark: 'Approved by HOU: ' . $user->name,
+                userId: $user->id
+            );
+
+            // Notify ITD Admin
+            $itdAdmins = $this->getITDAdmins();
+            foreach ($itdAdmins as $admin) {
+                $admin->notify(new CrfVerified($crf));
+            }
+
+            return redirect()->route('dashboard')->with('success', 'CRF approved successfully!');
+        }
     }
 
     public function acknowledge(Crf $crf)
     {
         // Check if CRF is in "Verified" status (id: 2)
-        if ($crf->application_status_id != 2) {
+        if (!in_array($crf->application_status_id, [2, 11])) {
             return redirect()->route('dashboard')->with('error', 'CRF must be verified before acknowledgment');
         }
         
@@ -383,6 +414,7 @@ class CrfController extends Controller
             'factor',
             'application_status',
             'approver',
+            'tp_approver',
             'assigned_user',
             'statusTimeline.user',
             'attachments',
@@ -423,6 +455,7 @@ class CrfController extends Controller
                 'attachments' => $attachments,
             ]),
             'can_approve' => Gate::allows('verified CRF'),
+            'can_approve_tp' => Gate::allows('approved by TP'),
             'can_acknowledge' => Gate::allows('Acknowledge CRF by ITD'),
             'can_assign_itd' => Gate::allows('Assign CRF To ITD'),
             'can_assign_vendor' =>Gate::allows('Assign CRF to Vendor'),
@@ -585,5 +618,50 @@ class CrfController extends Controller
     {
         // Get all users with ITD Admin role
         return User::role('ITD Admin')->get();
+    }
+
+    // app/Http/Controllers/CrfController.php
+
+    public function approveByTP(Crf $crf)
+    {
+        $user = Auth::user();
+
+        // Check if user is TP
+        // if (!$user->hasRole('Timbalan Pengarah')) {
+        //     abort(403, 'Only Timbalan Pengarah can approve this CRF');
+        // }
+
+        // Check if CRF is in "Verified by HOU" status
+        if ($crf->application_status_id != 10) {
+            return redirect()->route('dashboard')->with('error', 'This CRF is not ready for TP approval');
+        }
+
+        // Update to "Verified by TP"
+        $crf->update([
+            'application_status_id' => 11, // Verified by TP
+            'tp_approved_by' => $user->id,
+        ]);
+
+        // Add timeline entry
+        $crf->addTimelineEntry(
+            status: 'Verified by TP',
+            actionType: 'status_change',
+            remark: 'Approved by Timbalan Pengarah: ' . $user->name,
+            userId: $user->id
+        );
+
+        // Notify ITD Admin
+        $itdAdmins = $this->getITDAdmins();
+        foreach ($itdAdmins as $admin) {
+            $admin->notify(new CrfVerified($crf));
+        }
+
+        return redirect()->route('dashboard')->with('success', 'CRF approved successfully! Notification sent to ITD Admin.');
+    }
+
+    // Helper method to get TP users
+    private function getTPs()
+    {
+        return User::role('Timbalan Pengarah')->get();
     }
 }
