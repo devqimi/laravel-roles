@@ -220,14 +220,28 @@ export default function Register({ departments, roles }: RegisterProps) {
                                 />
                                 <span>HOU</span>
                             </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="role"
+                                    value="TIMBALAN PENGARAH"
+                                    checked={data.role === 'TIMBALAN PENGARAH'}
+                                    onChange={(e) => setData('role', e.target.value)}
+                                    className="h-4 w-4"
+                                    required
+                                />
+                                <span>Timbalan Pengarah</span>
+                            </label>
                         </div>
                     )}
+
                     <InputError message={errors.role} />
                     {!isITDepartment && (
                         <p className="text-xs text-gray-500">
                             Non-IT departments can only be assigned USER or HOU roles
                         </p>
                     )}
+
                 </div>
 
                 <Button
