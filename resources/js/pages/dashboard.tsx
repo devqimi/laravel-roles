@@ -82,7 +82,7 @@ export default function Dashboard({
     can_update_own_crf = false,
     itd_pics = [],
     vendor_pics = [],
-    factors = [],
+    // factors = [],
 }: Props) {
 
 
