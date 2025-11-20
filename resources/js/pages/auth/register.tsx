@@ -169,7 +169,10 @@ export default function Register({ departments, roles }: RegisterProps) {
                     >
                         <option value="">Select department</option>
                         {departments.map((d) => (
-                            <option key={d.id} value={d.id}>
+                            <option
+                                key={d.id}
+                                value={d.id}
+                                className="text-black">
                                 {d.dname}
                             </option>
                         ))}
