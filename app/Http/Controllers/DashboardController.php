@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Crf;
 use App\Models\User;
+use App\Models\Category;
 use Inertia\Inertia;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -173,6 +174,7 @@ class DashboardController extends Controller
             'can_assign_itd' => Gate::allows('Assign CRF To ITD') || Gate::allows('Re Assign PIC ITD'),
             'can_assign_vendor' => Gate::allows('Assign CRF to Vendor') || Gate::allows('Re Assign PIC Vendor'),
             'can_update_own_crf' => Gate::allows('Update CRF (own CRF)'),
+            'categories' => Category::all(),
             'itd_pics' => $itdPics,
             'vendor_pics' => $vendorPics,
             'can_approve_tp' => Gate::allows('approved by TP'),

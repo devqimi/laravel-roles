@@ -9,7 +9,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/
 import AppLayout from '@/layouts/app-layout';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Crf } from '@/types/crf';
+import { Category, Crf } from '@/types/crf';
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle, ClipboardCheck, UserPlus, Eye } from 'lucide-react';
 import AssignCrfModal from '@/pages/crfs/AssignCrfModal';
@@ -107,8 +107,7 @@ type Props = {
     itd_pics?: User[];
     vendor_pics?: User[];
     factors: Factor[];
-    // categories: Category[]; // Add this
-    vendors: User[];
+    categories: Category[];
 };
 
 export default function Dashboard({
@@ -129,6 +128,7 @@ export default function Dashboard({
     can_update_own_crf = false,
     itd_pics = [],
     vendor_pics = [],
+    categories = [],
     // factors = [],
 }: Props) {
 
@@ -274,10 +274,10 @@ export default function Dashboard({
                         )}
                         <CardAction>
                             
-                            {/* <CRFReportGenerator 
+                            <CRFReportGenerator 
                                 categories={categories}
                                 vendors={vendor_pics}
-                            /> */}
+                            />
 
                             {can_create && (
                                 <Link href={'crfs/create'}>
