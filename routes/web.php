@@ -9,9 +9,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CrfController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CrfAttachmentController;
 
 Route::get('/', function () {
@@ -98,7 +99,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     
-    Route::get('crf-attachments/{attachment}/download', [CrfAttachmentController::class, 'download'])->name('crf-attachments.download');});
+    Route::get('crf-attachments/{attachment}/download', [CrfAttachmentController::class, 'download'])->name('crf-attachments.download');
+
+    Route::get('/reports/crf/export', [ReportController::class, 'exportCrf'])->name('reports.crf.export');
+});
 
 
 require __DIR__ . '/settings.php';
