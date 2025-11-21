@@ -20,4 +20,8 @@ class Department extends Model
     {
         return $this->hasMany(User::class);
     }
+    public function crfs()
+    {
+        return $this->hasMany(Crf::class, 'department_id');
+    }
 }
