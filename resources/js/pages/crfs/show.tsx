@@ -234,7 +234,7 @@ export default function ShowCrf({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="View CRF" />
-            <div className="flex h-full flex-1 flex-col gap-4 p-4">
+            <div className="flex h-full flex-1 flex-col gap-4 p-4 bg-gradient-to-b from-blue-300 to-blue-500 rounded-xl">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>CRF Details - #{crf.id}</CardTitle>
