@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, Link } from '@inertiajs/react';
 import { Search, Eye, Clock } from 'lucide-react';
 import { useState } from 'react';
 
@@ -137,7 +137,7 @@ export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
                                     required
                                 />
                             </div>
-                            <Button type="submit" disabled={isSearching}>
+                            <Button className="bg-blue-700 hover:bg-blue-800" type="submit" disabled={isSearching}>
                                 <Search className="mr-2 h-4 w-4" />
                                 {isSearching ? 'Searching...' : 'Search'}
                             </Button>
@@ -222,15 +222,16 @@ export default function CheckCrfStatus({ searchResults, searchNric }: Props) {
                                                         </div>
                                                     </div>
                                                 </div>
-                                                <Button
-                                                    onClick={() => handleViewDetails(crf)}
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="ml-4"
-                                                >
-                                                    <Eye className="mr-2 h-4 w-4" />
-                                                    View Details
-                                                </Button>
+                                                <Link href={`/crfs/${crf.id}`}>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="ml-4"
+                                                    >
+                                                        <Eye className="mr-2 h-4 w-4" />
+                                                        View Details
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </div>
                                     ))}
