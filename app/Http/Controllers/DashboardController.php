@@ -66,7 +66,6 @@ class DashboardController extends Controller
                 $departmentCrfs = Crf::with(['department', 'category', 'factor', 'user', 'application_status', 'approver', 'assigned_user'])
                 ->where('department_id', $user->department_id)
                 ->whereIn('application_status_id', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
-                ->orderBy('created_at', 'desc')
                 ->latest()
                 ->get();
 
@@ -158,12 +157,6 @@ class DashboardController extends Controller
         
         $itdPics = User::role('ITD PIC')->select('id', 'name')->get();
         $vendorPics = User::role('VENDOR PIC')->select('id', 'name')->get();
-
-        // Get chart data
-        $chartData = [
-            'trendData' => $this->getTrendData(),
-            'departmentData' => $this->getDepartmentData(),
-        ];
 
         return Inertia::render('dashboard', [
             'crfs' => $crfs,

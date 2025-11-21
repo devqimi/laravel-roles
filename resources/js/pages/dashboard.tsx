@@ -722,7 +722,7 @@ export default function Dashboard({
                             </div>
                         </CardContent>
 
-                        {/* {department_crfs.length > 0 ? (
+                        {department_crfs.length > 0 ? (
                             <TablePagination
                                 total={crfs.total}
                                 from={crfs.from}
@@ -733,7 +733,7 @@ export default function Dashboard({
                             <div className="flex h-full items-center justify-center">
                                 No Results Found!
                             </div>
-                        )} */}
+                        )}
                         
                     </Card>    
                 )}
