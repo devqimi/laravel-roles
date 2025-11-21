@@ -274,10 +274,12 @@ export default function Dashboard({
                         )}
                         <CardAction>
                             
-                            <CRFReportGenerator 
-                                categories={categories}
-                                vendors={vendor_pics}
-                            />
+                            {!can_create && (
+                                <CRFReportGenerator 
+                                    categories={categories}
+                                    vendors={vendor_pics}
+                                />
+                            )}
 
                             {can_create && (
                                 <Link href={'crfs/create'}>
