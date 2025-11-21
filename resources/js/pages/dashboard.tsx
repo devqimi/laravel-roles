@@ -1,4 +1,8 @@
 import TablePagination from '@/components/table-pagination';
+import MyCRFStats from '@/components/my-crf-stats';
+import CRFStats from '@/components/crf-stats';
+import CRFCharts from '@/components/crf-charts';
+import CRFReportGenerator from '@/components/crf-report-generator';
 import { Button } from '@/components/ui/button';
 import {Card, CardAction, CardContent, CardHeader, CardTitle,} from '@/components/ui/card';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from '@/components/ui/table';
@@ -49,8 +53,46 @@ type CrfData = {
     updated_at: string;
 };
 
+type TrendData = {
+    date: string;
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+};
+
+type DepartmentData = {
+    department: string;
+    total: number;
+    pending: number;
+    inProgress: number;
+    completed: number;
+};
+
 type Props = {
     crfs: Crf;
+    stats: {
+        // Admin stats
+        total?: number;
+        pending?: number;
+        in_progress?: number;
+        completed?: number;
+        // User stats
+        my_total?: number;
+        my_pending?: number;
+        my_in_progress?: number;
+        my_completed?: number;
+        my_this_month?: number;
+    };
+    chartData: {
+        trendData: {
+            daily: TrendData[];
+            weekly: TrendData[];
+            monthly: TrendData[];
+        };
+        departmentData: DepartmentData[];
+    } | null;
+    isAdminOrHOU?: boolean;
     department_crfs: CrfData[] | null;
     can_view?: boolean;
     can_view_department?: boolean;
@@ -65,10 +107,15 @@ type Props = {
     itd_pics?: User[];
     vendor_pics?: User[];
     factors: Factor[];
+    // categories: Category[]; // Add this
+    vendors: User[];
 };
 
 export default function Dashboard({
     crfs,
+    stats,
+    chartData,
+    isAdminOrHOU,
     department_crfs = null,
     can_view = false,
     can_view_department = false,
@@ -183,6 +230,41 @@ export default function Dashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="CRF" />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
+
+                {isAdminOrHOU ? (
+                    <>
+                        {/* Admin/HOU View */}
+                        <Card>
+                            <CRFStats 
+                                totalCRF={stats.total || 0}
+                                inProgress={stats.in_progress || 0}
+                                completed={stats.completed || 0}
+                                pending={stats.pending || 0}
+                            />
+                        </Card>
+                        {/* Charts for Admin/HOU only */}
+                        {chartData && (
+                            <CRFCharts 
+                                trendData={chartData.trendData}
+                                departmentData={chartData.departmentData}
+                            />
+                        )}
+                    </>
+                ) : (
+                    <>
+                        {/* Regular User View */}
+                        <Card>
+                            <MyCRFStats 
+                                myTotal={stats.my_total || 0}
+                                myPending={stats.my_pending || 0}
+                                myInProgress={stats.my_in_progress || 0}
+                                myCompleted={stats.my_completed || 0}
+                                myThisMonth={stats.my_this_month || 0}
+                            />
+                        </Card>
+                    </>
+                )}
+
                 <Card>
                     <CardHeader className="flex items-center justify-between">
                         {can_approve ? (
@@ -192,9 +274,16 @@ export default function Dashboard({
                         )}
                         <CardAction>
                             
+                            {/* <CRFReportGenerator 
+                                categories={categories}
+                                vendors={vendor_pics}
+                            /> */}
+
                             {can_create && (
                                 <Link href={'crfs/create'}>
-                                    <Button variant={'default'}>
+                                    <Button 
+                                        variant={'default'}
+                                        className="bg-blue-700 hover:bg-blue-800">
                                         Create CRF
                                     </Button>
                                 </Link>
@@ -206,7 +295,7 @@ export default function Dashboard({
                     <CardContent>
                         <div className="rounded-md border overflow-hidden">
                             <Table>
-                                <TableHeader className="bg-slate-500">
+                                <TableHeader className="bg-blue-900">
                                     <TableRow>
                                         <TableHead className="font-bold text-white">
                                             No.
@@ -261,7 +350,7 @@ export default function Dashboard({
                                 </TableHeader>
                                 <TableBody>
                                     {crfs.data.map((crf, index) => (
-                                        <TableRow key={crf.id} className="odd:bg-slate-100 dark:odd:bg-slate-800">
+                                        <TableRow key={crf.id} className="bg-white">
                                             <TableCell>{index + 1}</TableCell>
                                             <TableCell>{crf.fname}</TableCell>
                                             <TableCell>{crf.nric}</TableCell>
@@ -414,24 +503,23 @@ export default function Dashboard({
                                 </TableBody>
                             </Table>
                         </div>
+                        {crfs.data.length > 0 ? (
+                            <TablePagination
+                                total={crfs.total}
+                                from={crfs.from}
+                                to={crfs.to}
+                                links={crfs.links}
+                            />
+                        ) : (
+                            <div className="flex h-full items-center justify-center p-4">
+                                No Crf Yet..
+                            </div>
+                        )}
                     </CardContent>
-
-                    {crfs.data.length > 0 ? (
-                        <TablePagination
-                            total={crfs.total}
-                            from={crfs.from}
-                            to={crfs.to}
-                            links={crfs.links}
-                        />
-                    ) : (
-                        <div className="flex h-full items-center justify-center">
-                            No Results Found!
-                        </div>
-                    )}
 
                 </Card>
                 
-                {/* FOR HOU DASHBOARD VIEW */}
+                {/* FOR HOU DASHBOARD CRF VIEW */}
                 {(can_approve && can_view_department && department_crfs && department_crfs.length > 0) && (
                     <Card>
                         <CardHeader>
@@ -441,7 +529,7 @@ export default function Dashboard({
                         <CardContent>
                             <div className="rounded-md border overflow-hidden">
                                 <Table>
-                                    <TableHeader className="bg-slate-500">
+                                    <TableHeader className="bg-blue-900">
                                         <TableRow>
                                             <TableHead className="font-bold text-white">
                                                 No.
@@ -496,7 +584,7 @@ export default function Dashboard({
                                     </TableHeader>
                                     <TableBody>
                                         {department_crfs.map((crf, index) => (
-                                            <TableRow key={crf.id} className="odd:bg-slate-100 dark:odd:bg-slate-800">
+                                            <TableRow key={crf.id} className="bg-white">
                                                 <TableCell>{index + 1}</TableCell>
                                                 <TableCell>{crf.fname}</TableCell>
                                                 <TableCell>{crf.nric}</TableCell>
